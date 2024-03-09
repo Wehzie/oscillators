@@ -1,4 +1,3 @@
-import asyncio
 from pathlib import Path
 import toga
 from toga.style import Pack
@@ -15,13 +14,13 @@ import http.server
 import socketserver
 import os
 import tempfile
-from scipy.signal import sawtooth, chirp
 import threading
-from typing import Final
 
-PORT = 8002
+import oscillators.target as target
+
+PORT = 8001
 NUM_FRAMES = 100
-RNG: Final = np.random.default_rng(5)
+
 
 class oscillators(toga.App):
     def startup(self):
@@ -73,7 +72,8 @@ class oscillators(toga.App):
 
     def setup_controls(self):
         self.wave_type = toga.Selection(
-            items=['Sine', 'Triangle', 'Square', 'Sawtooth', 'Chirp', 'Uniform Noise'],
+            items=['Sine', 'Triangle', 'Square', 'Sawtooth', 'Inverse Sawtooth', 'Chirp', 'Beat', 'Damp Chirp',
+                   'Smooth Gaussian Noise', 'Smooth Uniform Noise', 'Gaussian Noise', 'Uniform Noise'],
             style=Pack(padding=10),
             on_change=self.on_wave_type_select
         )
@@ -107,6 +107,32 @@ class oscillators(toga.App):
         # Stop the current animation
         self.ani.event_source.stop()
 
+        # Initialize new target
+        if self.wave_type.value == 'Sine':
+            self.target = target.SineTarget(1, 100)
+        elif self.wave_type.value == 'Triangle':
+            self.target = target.TriangleTarget(1, 100)
+        elif self.wave_type.value == "Square":
+            self.target = target.SquareTarget(1, 100)
+        elif self.wave_type.value == "Sawtooth":
+            self.target = target.SawtoothTarget(1, 100)
+        elif self.wave_type.value == "Inverse Sawtooth":
+            self.target = target.InverseSawtoothTarget(1, 100)
+        elif self.wave_type.value == "Chirp":
+            self.target = target.ChirpTarget(1, 100)
+        elif self.wave_type.value == "Beat":
+            self.target = target.BeatTarget(1, 100)
+        elif self.wave_type.value == "Damp Chirp":
+            self.target = target.DampChirpTarget(1, 100)
+        elif self.wave_type.value == "Smooth Gaussian Noise":
+            self.target = target.SmoothGaussianNoiseTarget(1, 100)
+        elif self.wave_type.value == "Smooth Uniform Noise":
+            self.target = target.SmoothUniformNoiseTarget(1, 100)
+        elif self.wave_type.value == "Gaussian Noise":
+            self.target = target.GaussianNoiseTarget(1, 100)
+        elif self.wave_type.value == "Uniform Noise":
+            self.target = target.UniformNoiseTarget(1, 100)
+
         # Start a new animation with the selected wave type
         self.start_animation()
 
@@ -117,8 +143,8 @@ class oscillators(toga.App):
         self.fig = Figure()
         self.canvas = FigureCanvas(self.fig)
         self.ax = self.fig.add_subplot(111)
-        self.x = np.linspace(0, 2*np.pi, 500)
-        self.line, = self.ax.plot(self.x, np.sin(self.x))
+        self.target = target.SineTarget(1, 100)
+        self.line, = self.ax.plot([], [], lw=2)  # initialize a line object
 
     def setup_webview(self):
         self.web_view = toga.WebView(style=Pack(flex=1))
@@ -135,7 +161,7 @@ class oscillators(toga.App):
         self.animation_thread.start()
 
     def generate_gif(self):
-        self.ani = animation.FuncAnimation(self.fig, self.animate, frames=NUM_FRAMES, interval=20, blit=True, repeat=True)
+        self.ani = animation.FuncAnimation(self.fig, self.target.animate, fargs=(NUM_FRAMES, self.fig, self.line,), frames=NUM_FRAMES, interval=20, blit=True, repeat=True)
         with tempfile.NamedTemporaryFile(suffix=".gif", delete=False) as temp:
             self.gif_file = Path(temp.name)
         self.ani.save(self.gif_file, writer=PillowWriter(fps=30))
@@ -154,37 +180,6 @@ class oscillators(toga.App):
         
         # Load the GIF file into the WebView
         self.web_view.url = f"http://localhost:{PORT}/{self.gif_file.name}"
-
-    def animate(self, frame_index):
-        # Calculate the phase shift
-        phase_shift = (frame_index / NUM_FRAMES) * 2 * np.pi
-
-        # Generate the wave with the phase shift
-        if self.wave_type.value == 'Sine':
-            self.line.set_ydata(np.sin(self.x + phase_shift))
-        elif self.wave_type.value == 'Triangle':
-            self.line.set_ydata(sawtooth(self.x + phase_shift, 0.5))
-        elif self.wave_type.value == "Square":
-            self.line.set_ydata(np.sign(np.sin(self.x + phase_shift)))
-        elif self.wave_type.value == "Sawtooth":
-            self.line.set_ydata(sawtooth(self.x + phase_shift, 1))
-        elif self.wave_type.value == "Chirp":
-            x_max = self.x[-1]
-            phase_shift_vary_up = (frame_index / NUM_FRAMES) * x_max
-            phase_shift_vary_down = x_max / (1+(frame_index / NUM_FRAMES))
-            single_chirp_up = chirp(self.x + phase_shift_vary_up, f0=1, f1=3, t1=x_max, method='linear')
-            single_chirp_down = chirp(self.x - phase_shift_vary_down, f0=3, f1=1, t1=x_max, method='linear')
-            if frame_index < NUM_FRAMES / 2:
-                full_chirp = single_chirp_up
-            else:
-                full_chirp = single_chirp_down
-            self.line.set_ydata(full_chirp)
-        elif self.wave_type.value == "Uniform Noise":
-            noise = RNG.uniform(-1, 1, self.x.size)
-            self.line.set_ydata(noise)
-
-        self.canvas.draw()
-        return self.line,
 
 def main():
     return oscillators()
