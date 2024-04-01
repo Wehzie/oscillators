@@ -20,6 +20,7 @@ import oscillators.target as target
 
 PORT = 8001
 NUM_FRAMES = 100
+SAMPLING_RATE = 100
 
 
 class oscillators(toga.App):
@@ -27,6 +28,7 @@ class oscillators(toga.App):
         self.on_exit = self.exit_handler
 
         self.setup_webview()
+        self.setup_oscillator_grid()
         self.setup_window()
         self.setup_controls()
 
@@ -44,7 +46,8 @@ class oscillators(toga.App):
         img = PIL_Image.new('RGB', (800, 400), color = (255, 255, 255))  # White background
         d = ImageDraw.Draw(img)
         font_size = 60
-        fnt = ImageFont.load_default().font_variant(size=font_size)
+        # CROSS-PLATFORM: .font_variant not supported on Android
+        fnt = ImageFont.load_default()#.font_variant(size=font_size)
         text = "Generating animation."
         # estimate the width and height of the text from number of characters
 
@@ -101,7 +104,7 @@ class oscillators(toga.App):
         self.main_window.content.add(controls_box)
 
     def on_slider_change(self, widget):
-        pass
+        self.on_wave_type_select(None)
 
     def on_wave_type_select(self, widget):
         # Stop the current animation
@@ -109,29 +112,29 @@ class oscillators(toga.App):
 
         # Initialize new target
         if self.wave_type.value == 'Sine':
-            self.target = target.SineTarget(1, 100)
+            self.target = target.SineTarget(1, SAMPLING_RATE, freq=self.frequency_slider.value, amplitude=self.amplitude_slider.value, offset=self.offset_slider.value, phase=self.phase_slider.value)
         elif self.wave_type.value == 'Triangle':
-            self.target = target.TriangleTarget(1, 100)
+            self.target = target.TriangleTarget(1, SAMPLING_RATE, freq=self.frequency_slider.value, amplitude=self.amplitude_slider.value, offset=self.offset_slider.value, phase=self.phase_slider.value)
         elif self.wave_type.value == "Square":
-            self.target = target.SquareTarget(1, 100)
+            self.target = target.SquareTarget(1, SAMPLING_RATE, freq=self.frequency_slider.value, amplitude=self.amplitude_slider.value, offset=self.offset_slider.value, phase=self.phase_slider.value)
         elif self.wave_type.value == "Sawtooth":
-            self.target = target.SawtoothTarget(1, 100)
+            self.target = target.SawtoothTarget(1, SAMPLING_RATE, freq=self.frequency_slider.value, amplitude=self.amplitude_slider.value, offset=self.offset_slider.value, phase=self.phase_slider.value)
         elif self.wave_type.value == "Inverse Sawtooth":
-            self.target = target.InverseSawtoothTarget(1, 100)
+            self.target = target.InverseSawtoothTarget(1, SAMPLING_RATE, freq=self.frequency_slider.value, amplitude=self.amplitude_slider.value, offset=self.offset_slider.value, phase=self.phase_slider.value)
         elif self.wave_type.value == "Chirp":
-            self.target = target.ChirpTarget(1, 100)
+            self.target = target.ChirpTarget(1, SAMPLING_RATE, stop_freq=self.frequency_slider.value, amplitude=self.amplitude_slider.value, offset=self.offset_slider.value) # TODO: phase
         elif self.wave_type.value == "Beat":
-            self.target = target.BeatTarget(1, 100)
+            self.target = target.BeatTarget(1, SAMPLING_RATE, base_freq=self.frequency_slider.value, amplitude=self.amplitude_slider.value, offset=self.offset_slider.value, phase=self.phase_slider.value)
         elif self.wave_type.value == "Damp Chirp":
-            self.target = target.DampChirpTarget(1, 100)
+            self.target = target.DampChirpTarget(1, SAMPLING_RATE, stop_freq=self.frequency_slider.value, amplitude=self.amplitude_slider.value, offset=self.offset_slider.value) # TODO: phase
         elif self.wave_type.value == "Smooth Gaussian Noise":
-            self.target = target.SmoothGaussianNoiseTarget(1, 100)
+            self.target = target.SmoothGaussianNoiseTarget(1, SAMPLING_RATE, amplitude=self.amplitude_slider.value, offset=self.offset_slider.value) # TODO: window-length
         elif self.wave_type.value == "Smooth Uniform Noise":
-            self.target = target.SmoothUniformNoiseTarget(1, 100)
+            self.target = target.SmoothUniformNoiseTarget(1, SAMPLING_RATE, amplitude=self.amplitude_slider.value, offset=self.offset_slider.value) # TODO: window-length
         elif self.wave_type.value == "Gaussian Noise":
-            self.target = target.GaussianNoiseTarget(1, 100)
+            self.target = target.GaussianNoiseTarget(1, SAMPLING_RATE, amplitude=self.amplitude_slider.value, offset=self.offset_slider.value)
         elif self.wave_type.value == "Uniform Noise":
-            self.target = target.UniformNoiseTarget(1, 100)
+            self.target = target.UniformNoiseTarget(1, SAMPLING_RATE, amplitude=self.amplitude_slider.value, offset=self.offset_slider.value)
 
         # Start a new animation with the selected wave type
         self.start_animation()
@@ -143,7 +146,7 @@ class oscillators(toga.App):
         self.fig = Figure()
         self.canvas = FigureCanvas(self.fig)
         self.ax = self.fig.add_subplot(111)
-        self.target = target.SineTarget(1, 100)
+        self.target = target.SineTarget(1, SAMPLING_RATE)
         self.line, = self.ax.plot([], [], lw=2)  # initialize a line object
 
     def setup_webview(self):

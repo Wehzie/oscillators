@@ -1,0 +1,6 @@
+pillow
+matplotlib
+numpy
+scipy
+toga
+briefcase
