@@ -18,7 +18,7 @@ import threading
 
 import oscillators.target as target
 
-PORT = 8002
+PORT = 8001
 NUM_FRAMES = 40
 SAMPLING_RATE = 100
 
@@ -28,9 +28,10 @@ class oscillators(toga.App):
         self.is_generating = False
         self.on_exit = self.exit_handler
 
-        self.setup_webview()
-        self.setup_window()
+        self.setup_target_webview()
+        self.setup_oscillators_webview()
         self.setup_controls_bar()
+        self.compose_window()
 
         self.setup_plot()
 
@@ -41,19 +42,6 @@ class oscillators(toga.App):
 
     def setup_oscillator_grid(self):
         self.oscillators = []
-
-        self.oscillator1 = toga.WebView(style=Pack(flex=1))
-        self.oscillator2 = toga.WebView(style=Pack(flex=1))
-        self.oscillator3 = toga.WebView(style=Pack(flex=1))
-        self.oscillator4 = toga.WebView(style=Pack(flex=1))
-
-        # Create two Box instances for the rows of the grid
-        row1 = toga.Box(children=[self.oscillator1, self.oscillator2], style=Pack(direction=ROW, flex=1))
-        row2 = toga.Box(children=[self.oscillator3, self.oscillator4], style=Pack(direction=ROW, flex=1))
-
-        # Create a Box instance for the grid
-        self.oscillator_grid = toga.Box(children=[row1, row2], style=Pack(direction=COLUMN, flex=1))
-
 
     def create_placeholder_gif(self):
         # Create a placeholder GIF file
@@ -94,8 +82,7 @@ class oscillators(toga.App):
         self.setup_oscillator_controls()
         spacer = toga.Box(style=Pack(height=30))
         self.controls_bar = toga.Box(children=[self.target_controls, spacer, self.oscillator_controls],
-                                     style=Pack(direction=COLUMN, padding=10))
-        self.main_window.content.add(self.controls_bar)
+                                     style=Pack(direction=COLUMN))
         
     def setup_oscillator_controls(self):
         pad_left_right = Pack(padding=(0, 10, 0, 10))
@@ -173,7 +160,7 @@ class oscillators(toga.App):
         self.start_animation()
 
         # Update the WebView to display the new gif
-        self.web_view.url = f"http://localhost:{PORT}/{self.gif_file.name}"
+        self.target_web_view.url = f"http://localhost:{PORT}/{self.gif_file.name}"
 
     def setup_plot(self):
         self.fig = Figure()
@@ -182,13 +169,19 @@ class oscillators(toga.App):
         self.target = target.SineTarget(1, SAMPLING_RATE)
         self.line, = self.ax.plot([], [], lw=2)  # initialize a line object
 
-    def setup_webview(self):
-        self.web_view = toga.WebView(style=Pack(flex=1))
+    def setup_target_webview(self):
+        self.target_web_view = toga.WebView(style=Pack(flex=1))
 
-    def setup_window(self):
-        main_box = toga.Box(children=[self.web_view])
+    def setup_oscillators_webview(self):
+        self.oscillators_web_view = toga.WebView(style=Pack(flex=1))
+
+    def compose_window(self):
+        spacer = toga.Box(style=Pack(height=30))
+        animations = toga.Box(children=[self.target_web_view, spacer, self.oscillators_web_view], style=Pack(direction=COLUMN, flex=2))
+        
+        animation_and_controls = toga.Box(children=[animations, self.controls_bar], style=Pack(direction=ROW))
         self.main_window = toga.MainWindow(title=self.formal_name)
-        self.main_window.content = main_box
+        self.main_window.content = animation_and_controls
         self.main_window.show()
 
     def start_animation(self):
@@ -207,7 +200,7 @@ class oscillators(toga.App):
         self.is_generating = False
 
         # Update the WebView to display the new gif
-        self.web_view.url = f"http://localhost:{PORT}/{self.gif_file.name}"
+        self.target_web_view.url = f"http://localhost:{PORT}/{self.gif_file.name}"
 
     def start_server(self):
         # Change the current working directory to the directory of the temporary file
@@ -219,7 +212,7 @@ class oscillators(toga.App):
         self.server_thread.start()
         
         # Load the GIF file into the WebView
-        self.web_view.url = f"http://localhost:{PORT}/{self.gif_file.name}"
+        self.target_web_view.url = f"http://localhost:{PORT}/{self.gif_file.name}"
 
 def main():
     return oscillators()
