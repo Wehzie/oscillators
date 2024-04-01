@@ -18,17 +18,17 @@ import threading
 
 import oscillators.target as target
 
-PORT = 8001
-NUM_FRAMES = 100
+PORT = 8002
+NUM_FRAMES = 40
 SAMPLING_RATE = 100
 
 
 class oscillators(toga.App):
     def startup(self):
+        self.is_generating = False
         self.on_exit = self.exit_handler
 
         self.setup_webview()
-        self.setup_oscillator_grid()
         self.setup_window()
         self.setup_controls()
 
@@ -159,6 +159,9 @@ class oscillators(toga.App):
         self.main_window.show()
 
     def start_animation(self):
+        if self.is_generating:
+            return
+        self.is_generating = True
         # Create a new thread to generate the GIF
         self.animation_thread = threading.Thread(target=self.generate_gif)
         self.animation_thread.start()
@@ -167,7 +170,8 @@ class oscillators(toga.App):
         self.ani = animation.FuncAnimation(self.fig, self.target.animate, fargs=(NUM_FRAMES, self.fig, self.line,), frames=NUM_FRAMES, interval=20, blit=True, repeat=True)
         with tempfile.NamedTemporaryFile(suffix=".gif", delete=False) as temp:
             self.gif_file = Path(temp.name)
-        self.ani.save(self.gif_file, writer=PillowWriter(fps=30))
+        self.ani.save(self.gif_file, writer=PillowWriter(fps=80))
+        self.is_generating = False
 
         # Update the WebView to display the new gif
         self.web_view.url = f"http://localhost:{PORT}/{self.gif_file.name}"
