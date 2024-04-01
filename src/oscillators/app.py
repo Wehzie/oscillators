@@ -30,7 +30,7 @@ class oscillators(toga.App):
 
         self.setup_webview()
         self.setup_window()
-        self.setup_controls()
+        self.setup_controls_bar()
 
         self.setup_plot()
 
@@ -38,6 +38,22 @@ class oscillators(toga.App):
         
         self.start_animation()
         self.start_server()
+
+    def setup_oscillator_grid(self):
+        self.oscillators = []
+
+        self.oscillator1 = toga.WebView(style=Pack(flex=1))
+        self.oscillator2 = toga.WebView(style=Pack(flex=1))
+        self.oscillator3 = toga.WebView(style=Pack(flex=1))
+        self.oscillator4 = toga.WebView(style=Pack(flex=1))
+
+        # Create two Box instances for the rows of the grid
+        row1 = toga.Box(children=[self.oscillator1, self.oscillator2], style=Pack(direction=ROW, flex=1))
+        row2 = toga.Box(children=[self.oscillator3, self.oscillator4], style=Pack(direction=ROW, flex=1))
+
+        # Create a Box instance for the grid
+        self.oscillator_grid = toga.Box(children=[row1, row2], style=Pack(direction=COLUMN, flex=1))
+
 
     def create_placeholder_gif(self):
         # Create a placeholder GIF file
@@ -72,8 +88,27 @@ class oscillators(toga.App):
             return True
         else:
             return False
+        
+    def setup_controls_bar(self):
+        self.setup_target_controls()
+        self.setup_oscillator_controls()
+        spacer = toga.Box(style=Pack(height=30))
+        self.controls_bar = toga.Box(children=[self.target_controls, spacer, self.oscillator_controls],
+                                     style=Pack(direction=COLUMN, padding=10))
+        self.main_window.content.add(self.controls_bar)
+        
+    def setup_oscillator_controls(self):
+        pad_left_right = Pack(padding=(0, 10, 0, 10))
+        self.n_oscillators_slider = toga.Slider(min=1, max=10, value=1, style=pad_left_right)
+        self.oscillator_controls = toga.Box(
+            children=[
+                toga.Label('Number of oscillators:', style=Pack(padding=(10, 10, 0, 10))),
+                self.n_oscillators_slider,
+            ],
+            style=Pack(direction=COLUMN)
+        )
 
-    def setup_controls(self):
+    def setup_target_controls(self):
         self.wave_type = toga.Selection(
             items=['Sine', 'Triangle', 'Square', 'Sawtooth', 'Inverse Sawtooth', 'Chirp', 'Beat', 'Damp Chirp',
                    'Smooth Gaussian Noise', 'Smooth Uniform Noise', 'Gaussian Noise', 'Uniform Noise'],
@@ -86,7 +121,7 @@ class oscillators(toga.App):
         self.phase_slider = toga.Slider(min=0, max=2*np.pi, value=0, on_release=self.on_slider_change, style=pad_left_right)
         self.frequency_slider = toga.Slider(min=0.1, max=10, value=1, on_release=self.on_slider_change, style=pad_left_right)
 
-        controls_box = toga.Box(
+        self.target_controls = toga.Box(
             children=[
                 self.wave_type,
                 toga.Label('Amplitude:', style=Pack(padding=(10, 10, 0, 10))),
@@ -100,8 +135,6 @@ class oscillators(toga.App):
             ],
             style=Pack(direction=COLUMN)
         )
-
-        self.main_window.content.add(controls_box)
 
     def on_slider_change(self, widget):
         self.on_wave_type_select(None)
