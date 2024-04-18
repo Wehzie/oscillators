@@ -19,7 +19,6 @@ import matplotlib.pyplot as plt
 
 #### #### #### #### REAL WORLD TARGETS #### #### #### ####
 
-
 class AbstractTarget(ABC):
     """abstract base class for all meta targets"""
 
@@ -61,8 +60,24 @@ class AbstractTarget(ABC):
         fig.gca().set_ylim(shifted_signal.min() - y_pad, shifted_signal.max() + y_pad)  # set y limits
         line.set_data(self.time, shifted_signal)
         fig.canvas.draw()
-        return line,
+        return line
 
+class OscillatorGrid:
+    """a grid of oscillators"""
+
+    def __init__(self, oscillators: List[AbstractTarget]) -> None:
+        self.oscillators = oscillators
+
+    def animate(self, frame: int, num_frames: int, fig: figure.Figure, lines: List[plt.Line2D]) -> List:
+        """return the signal at a given frame index"""
+        animation_phase_shift = (frame / num_frames) * 2 * np.pi
+        for osc, line in zip(self.oscillators, lines):
+            shift_amount = int(animation_phase_shift / (2 * np.pi) * len(osc.signal))
+            shifted_signal = np.roll(osc.signal, -shift_amount)
+            line.set_data(osc.time, shifted_signal)
+        # TODO: x and y limits
+        fig.canvas.draw()
+        return lines
 
 #### #### #### #### SYNTHETIC TARGETS #### #### #### ####
 
@@ -332,7 +347,6 @@ class BeatTarget(SyntheticTarget):
             np.sin(2 * np.pi * base_freq * self.time + phase * np.pi)
             + np.sin(2 * np.pi * derived_freq * self.time + phase * np.pi)
         ) * amplitude + offset
-
 
 class DampChirpTarget(SyntheticTarget):
     """a damped chirp signal"""

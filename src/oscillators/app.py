@@ -2,6 +2,7 @@ from pathlib import Path
 import toga
 from toga.style import Pack
 from toga.style.pack import COLUMN, ROW
+import matplotlib.pyplot as plt
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 import matplotlib.animation as animation
@@ -15,8 +16,10 @@ import socketserver
 import os
 import tempfile
 import threading
+from dataclasses import dataclass
 
 import oscillators.target as target
+import oscillators.plot_layout as plot_layout
 
 PORT = 8001
 NUM_FRAMES = 40
@@ -25,7 +28,8 @@ SAMPLING_RATE = 100
 
 class oscillators(toga.App):
     def startup(self):
-        self.is_generating = False
+        self.generating_target = False
+        self.generating_oscillators = False
         self.on_exit = self.exit_handler
 
         self.setup_target_webview()
@@ -33,20 +37,24 @@ class oscillators(toga.App):
         self.setup_controls_bar()
         self.compose_window()
 
-        self.setup_plot()
+        self.setup_target_plot()
+        self.setup_oscillator_plot()
 
-        self.create_placeholder_gif()
+        self.init_gifs()
         
         self.start_animation()
         self.start_server()
 
-    def setup_oscillator_grid(self):
-        self.oscillators = []
+
+    def init_gifs(self):
+        self.target_gif = None
+        self.oscillator_gif = None
+        self.create_placeholder_gif()
 
     def create_placeholder_gif(self):
         # Create a placeholder GIF file
         with tempfile.NamedTemporaryFile(suffix=".gif", delete=False) as temp:
-            self.gif_file = Path(temp.name)
+            self.placeholder_gif = Path(temp.name)
         img = PIL_Image.new('RGB', (800, 400), color = (255, 255, 255))  # White background
         d = ImageDraw.Draw(img)
         font_size = 60
@@ -59,7 +67,7 @@ class oscillators(toga.App):
         x = (img.width - text_width) / 2
         y = (img.height - text_height) / 2
         d.text((x, y), text, font=fnt, fill=(0, 0, 0))
-        img.save(self.gif_file, 'GIF')
+        img.save(self.placeholder_gif, 'GIF')
     
     async def exit_handler(self, app):
         # Return True if app should close, and False if it should remain open
@@ -69,9 +77,11 @@ class oscillators(toga.App):
             self.httpd.server_close() # free the port
             self.httpd.shutdown() # stop server forever
             self.server_thread.join() # wait for the server to stop
-            if self.animation_thread.is_alive():
-                self.animation_thread.join()
-            os.remove(self.gif_file) # remove the temporary file
+            if self.target_animation_thread.is_alive():
+                self.target_animation_thread.join()
+            if self.oscillator_animation_thread.is_alive():
+                self.oscillator_animation_thread.join()
+            os.remove(self.placeholder_gif) # remove the temporary file
 
             return True
         else:
@@ -128,46 +138,67 @@ class oscillators(toga.App):
 
     def on_wave_type_select(self, widget):
         # Stop the current animation
-        self.ani.event_source.stop()
+        self.target_animation.event_source.stop()
 
         # Initialize new target
         if self.wave_type.value == 'Sine':
-            self.target = target.SineTarget(1, SAMPLING_RATE, freq=self.frequency_slider.value, amplitude=self.amplitude_slider.value, offset=self.offset_slider.value, phase=self.phase_slider.value)
+            self.target_plot.target = target.SineTarget(1, SAMPLING_RATE, freq=self.frequency_slider.value, amplitude=self.amplitude_slider.value, offset=self.offset_slider.value, phase=self.phase_slider.value)
         elif self.wave_type.value == 'Triangle':
-            self.target = target.TriangleTarget(1, SAMPLING_RATE, freq=self.frequency_slider.value, amplitude=self.amplitude_slider.value, offset=self.offset_slider.value, phase=self.phase_slider.value)
+            self.target_plot.target = target.TriangleTarget(1, SAMPLING_RATE, freq=self.frequency_slider.value, amplitude=self.amplitude_slider.value, offset=self.offset_slider.value, phase=self.phase_slider.value)
         elif self.wave_type.value == "Square":
-            self.target = target.SquareTarget(1, SAMPLING_RATE, freq=self.frequency_slider.value, amplitude=self.amplitude_slider.value, offset=self.offset_slider.value, phase=self.phase_slider.value)
+            self.target_plot.target = target.SquareTarget(1, SAMPLING_RATE, freq=self.frequency_slider.value, amplitude=self.amplitude_slider.value, offset=self.offset_slider.value, phase=self.phase_slider.value)
         elif self.wave_type.value == "Sawtooth":
-            self.target = target.SawtoothTarget(1, SAMPLING_RATE, freq=self.frequency_slider.value, amplitude=self.amplitude_slider.value, offset=self.offset_slider.value, phase=self.phase_slider.value)
+            self.target_plot.target = target.SawtoothTarget(1, SAMPLING_RATE, freq=self.frequency_slider.value, amplitude=self.amplitude_slider.value, offset=self.offset_slider.value, phase=self.phase_slider.value)
         elif self.wave_type.value == "Inverse Sawtooth":
-            self.target = target.InverseSawtoothTarget(1, SAMPLING_RATE, freq=self.frequency_slider.value, amplitude=self.amplitude_slider.value, offset=self.offset_slider.value, phase=self.phase_slider.value)
+            self.target_plot.target = target.InverseSawtoothTarget(1, SAMPLING_RATE, freq=self.frequency_slider.value, amplitude=self.amplitude_slider.value, offset=self.offset_slider.value, phase=self.phase_slider.value)
         elif self.wave_type.value == "Chirp":
-            self.target = target.ChirpTarget(1, SAMPLING_RATE, stop_freq=self.frequency_slider.value, amplitude=self.amplitude_slider.value, offset=self.offset_slider.value) # TODO: phase
+            self.target_plot.target = target.ChirpTarget(1, SAMPLING_RATE, stop_freq=self.frequency_slider.value, amplitude=self.amplitude_slider.value, offset=self.offset_slider.value) # TODO: phase
         elif self.wave_type.value == "Beat":
-            self.target = target.BeatTarget(1, SAMPLING_RATE, base_freq=self.frequency_slider.value, amplitude=self.amplitude_slider.value, offset=self.offset_slider.value, phase=self.phase_slider.value)
+            self.target_plot.target = target.BeatTarget(1, SAMPLING_RATE, base_freq=self.frequency_slider.value, amplitude=self.amplitude_slider.value, offset=self.offset_slider.value, phase=self.phase_slider.value)
         elif self.wave_type.value == "Damp Chirp":
-            self.target = target.DampChirpTarget(1, SAMPLING_RATE, stop_freq=self.frequency_slider.value, amplitude=self.amplitude_slider.value, offset=self.offset_slider.value) # TODO: phase
+            self.target_plot.target = target.DampChirpTarget(1, SAMPLING_RATE, stop_freq=self.frequency_slider.value, amplitude=self.amplitude_slider.value, offset=self.offset_slider.value) # TODO: phase
         elif self.wave_type.value == "Smooth Gaussian Noise":
-            self.target = target.SmoothGaussianNoiseTarget(1, SAMPLING_RATE, amplitude=self.amplitude_slider.value, offset=self.offset_slider.value) # TODO: window-length
+            self.target_plot.target = target.SmoothGaussianNoiseTarget(1, SAMPLING_RATE, amplitude=self.amplitude_slider.value, offset=self.offset_slider.value) # TODO: window-length
         elif self.wave_type.value == "Smooth Uniform Noise":
-            self.target = target.SmoothUniformNoiseTarget(1, SAMPLING_RATE, amplitude=self.amplitude_slider.value, offset=self.offset_slider.value) # TODO: window-length
+            self.target_plot.target = target.SmoothUniformNoiseTarget(1, SAMPLING_RATE, amplitude=self.amplitude_slider.value, offset=self.offset_slider.value) # TODO: window-length
         elif self.wave_type.value == "Gaussian Noise":
-            self.target = target.GaussianNoiseTarget(1, SAMPLING_RATE, amplitude=self.amplitude_slider.value, offset=self.offset_slider.value)
+            self.target_plot.target = target.GaussianNoiseTarget(1, SAMPLING_RATE, amplitude=self.amplitude_slider.value, offset=self.offset_slider.value)
         elif self.wave_type.value == "Uniform Noise":
-            self.target = target.UniformNoiseTarget(1, SAMPLING_RATE, amplitude=self.amplitude_slider.value, offset=self.offset_slider.value)
+            self.target_plot.target = target.UniformNoiseTarget(1, SAMPLING_RATE, amplitude=self.amplitude_slider.value, offset=self.offset_slider.value)
 
         # Start a new animation with the selected wave type
         self.start_animation()
 
         # Update the WebView to display the new gif
-        self.target_web_view.url = f"http://localhost:{PORT}/{self.gif_file.name}"
+        if self.target_gif:
+            self.target_web_view.url = f"http://localhost:{PORT}/{self.target_gif.name}"
 
-    def setup_plot(self):
-        self.fig = Figure()
-        self.canvas = FigureCanvas(self.fig)
-        self.ax = self.fig.add_subplot(111)
-        self.target = target.SineTarget(1, SAMPLING_RATE)
-        self.line, = self.ax.plot([], [], lw=2)  # initialize a line object
+    def setup_target_plot(self):
+        @dataclass
+        class TargetPlot:
+            fig = Figure()
+            canvas = FigureCanvas(fig)
+            ax = fig.add_subplot(111)
+            target = target.SineTarget(1, SAMPLING_RATE)
+            line = ax.plot([], [], lw=2)[0]  # initialize a line object
+
+        self.target_plot = TargetPlot()
+
+    def setup_oscillator_plot(self):
+        @dataclass
+        class OscillatorPlot:
+            n_oscillators = 2
+            n_rows, n_cols = plot_layout.infer_subplot_rows_cols(n_oscillators)
+            fig, axs = plt.subplots(n_rows, n_cols)
+            canvas = FigureCanvas(fig)
+            
+            oscillators = [target.SineTarget(1, SAMPLING_RATE) for _ in range(n_oscillators)]
+            oscillator_grid = target.OscillatorGrid(oscillators)
+            lines = []
+            for i in range(n_oscillators):
+                lines.append(axs[i].plot([], [], lw=2)[0])
+        
+        self.oscillator_plot = OscillatorPlot()
 
     def setup_target_webview(self):
         self.target_web_view = toga.WebView(style=Pack(flex=1))
@@ -185,26 +216,52 @@ class oscillators(toga.App):
         self.main_window.show()
 
     def start_animation(self):
-        if self.is_generating:
-            return
-        self.is_generating = True
-        # Create a new thread to generate the GIF
-        self.animation_thread = threading.Thread(target=self.generate_gif)
-        self.animation_thread.start()
+        if not self.generating_target:
+            self.generating_target = True
+            self.target_animation_thread = threading.Thread(target=self.generate_target_gif)
+            self.target_animation_thread.start()
+        if not self.generating_oscillators:
+            self.generating_oscillators = True
+            self.oscillator_animation_thread = threading.Thread(target=self.generate_oscillator_gif)
+            self.oscillator_animation_thread.start()
 
-    def generate_gif(self):
-        self.ani = animation.FuncAnimation(self.fig, self.target.animate, fargs=(NUM_FRAMES, self.fig, self.line,), frames=NUM_FRAMES, interval=20, blit=True, repeat=True)
+    def generate_target_gif(self):
+        self.target_animation = animation.FuncAnimation(
+            self.target_plot.fig,
+            self.target_plot.target.animate,
+            fargs=(NUM_FRAMES, self.target_plot.fig, self.target_plot.line,),
+            frames=NUM_FRAMES,
+            interval=20,
+            repeat=True
+        )
         with tempfile.NamedTemporaryFile(suffix=".gif", delete=False) as temp:
-            self.gif_file = Path(temp.name)
-        self.ani.save(self.gif_file, writer=PillowWriter(fps=80))
-        self.is_generating = False
+            self.target_gif = Path(temp.name)
+        self.target_animation.save(self.target_gif, writer=PillowWriter(fps=80))
+        self.generating_target = False
 
         # Update the WebView to display the new gif
-        self.target_web_view.url = f"http://localhost:{PORT}/{self.gif_file.name}"
+        self.target_web_view.url = f"http://localhost:{PORT}/{self.target_gif.name}"
+
+    def generate_oscillator_gif(self):
+        self.oscillator_animation = animation.FuncAnimation(
+            self.oscillator_plot.fig,
+            self.oscillator_plot.oscillator_grid.animate,
+            fargs=(NUM_FRAMES, self.oscillator_plot.fig, self.oscillator_plot.lines,),
+            frames=NUM_FRAMES,
+            interval=20,
+            repeat=True
+        )
+        with tempfile.NamedTemporaryFile(suffix=".gif", delete=False) as temp:
+            self.oscillator_gif = Path(temp.name)
+        self.oscillator_animation.save(self.oscillator_gif, writer=PillowWriter(fps=80))
+        self.generating_oscillators = False
+
+        # Update the WebView to display the new gif
+        self.oscillators_web_view.url = f"http://localhost:{PORT}/{self.oscillator_gif.name}"
 
     def start_server(self):
         # Change the current working directory to the directory of the temporary file
-        os.chdir(self.gif_file.parent)
+        os.chdir(self.placeholder_gif.parent)
         
         handler = http.server.SimpleHTTPRequestHandler
         self.httpd = socketserver.TCPServer(("", PORT), handler)
@@ -212,7 +269,7 @@ class oscillators(toga.App):
         self.server_thread.start()
         
         # Load the GIF file into the WebView
-        self.target_web_view.url = f"http://localhost:{PORT}/{self.gif_file.name}"
+        self.target_web_view.url = f"http://localhost:{PORT}/{self.placeholder_gif.name}"
 
 def main():
     return oscillators()
