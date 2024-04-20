@@ -110,12 +110,28 @@ class oscillators(toga.App):
             style=Pack(padding=10),
             on_change=self.update_oscillator_parameters
         )
+        self.optimization_algorithm = toga.Selection(
+            items=["Linear Regression",
+                   "Monte Carlo Random Walk", # MCExploit
+                   "Las Vegas Random Walk"
+                   ],
+            style=Pack(padding=10)
+        )
+        self.optimize_toggle = toga.Switch(
+            text='Optimize',
+            enabled=False,
+            style=Pack(padding=(10, 10, 0, 10))
+        )
+
         self.oscillator_controls = toga.Box(
             children=[
                 toga.Label('Number of oscillators:', style=Pack(padding=(10, 10, 0, 10))),
                 self.n_oscillators_slider,
                 toga.Label('Wave type:', style=Pack(padding=(10, 10, 0, 10))),
-                self.oscillator_wave_type
+                self.oscillator_wave_type,
+                toga.Label('Optimization algorithm:', style=Pack(padding=(10, 10, 0, 10))),
+                self.optimization_algorithm,
+                self.optimize_toggle
             ],
             style=Pack(direction=COLUMN)
         )
