@@ -6,6 +6,7 @@ The subclasses implement different ways to load a signal from file or generate a
 """
 
 import oscillators.const as const
+import oscillators.plot_layout as plot_layout
 
 from typing import Final, List, Tuple, Union
 from pathlib import Path
@@ -76,9 +77,10 @@ class OscillatorGrid:
             shift_amount = int(animation_phase_shift / (2 * np.pi) * len(osc.signal))
             shifted_signal = np.roll(osc.signal, -shift_amount)
             line.set_data(osc.time, shifted_signal)
-            fig.axes[ax_index].set_xlim(osc.time.min(), osc.time.max())  # set x limits
+            ax = plot_layout.select_axis(fig.axes, len(self.oscillators), ax_index)
+            ax.set_xlim(osc.time.min(), osc.time.max())  # set x limits
             y_pad = 0.05
-            fig.axes[ax_index].set_ylim(shifted_signal.min() - y_pad, shifted_signal.max() + y_pad)
+            ax.set_ylim(shifted_signal.min() - y_pad, shifted_signal.max() + y_pad)
             ax_index += 1
         # TODO: x and y limits
         fig.canvas.draw()

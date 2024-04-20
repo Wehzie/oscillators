@@ -17,6 +17,33 @@ def infer_subplot_rows_cols(n_signals: int) -> Tuple[int, int]:
     n_rows = n_rows + int(np.ceil(remainder / n_cols))
     return n_rows, n_cols
 
+def select_axis(ax: Union[plt.Axes,
+                          np.ndarray[plt.Axes],
+                          np.ndarray[np.ndarray[plt.Axes]]
+                          ],
+                          n_axes: int,
+                          i: int) -> plt.Axes:
+    """select an axis from a scalar, 1d or 2d array of axes
+    
+    args:
+        ax: a scalar, 1d or 2d array of axes
+        n_axes: the number of axes in the array
+        i: the index of the axis to select
+        
+    returns:
+        the index selected axis object
+    """
+    # axes is a scalar
+    if isinstance(ax, plt.Axes):
+        return ax
+    # axes is a 1d array
+    elif len(ax) >= 1 and isinstance(ax[0], plt.Axes):
+        return ax[i]
+    # axes is a 2d array
+    elif len(ax) > 1 and len(ax[0]) > 1 and isinstance(ax[0][0], plt.Axes):
+        return ax[i // n_axes][i % n_axes]
+    else:
+        raise ValueError("ax must be a scalar, 1d or 2d list of axes")
 
 def plot_multiple_targets_common_axis(
     targets: List, show: bool = False, save_path: Path = None

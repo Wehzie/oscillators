@@ -42,8 +42,11 @@ class oscillators(toga.App):
 
         self.init_gifs()
         
-        self.start_animation()
+        self.start_target_animation()
+        self.start_oscillator_animation(None)
         self.start_server()
+
+        self.global_counter = 0
 
 
     def init_gifs(self):
@@ -96,7 +99,11 @@ class oscillators(toga.App):
         
     def setup_oscillator_controls(self):
         pad_left_right = Pack(padding=(0, 10, 0, 10))
-        self.n_oscillators_slider = toga.Slider(min=1, max=10, value=1, style=pad_left_right)
+        self.n_oscillators_slider = toga.Slider(min=1,
+                                                max=12,
+                                                value=3,
+                                                style=pad_left_right,
+                                                on_release=self.update_oscillator_parameters)
         self.oscillator_controls = toga.Box(
             children=[
                 toga.Label('Number of oscillators:', style=Pack(padding=(10, 10, 0, 10))),
@@ -110,13 +117,13 @@ class oscillators(toga.App):
             items=['Sine', 'Triangle', 'Square', 'Sawtooth', 'Inverse Sawtooth', 'Chirp', 'Beat', 'Damp Chirp',
                    'Smooth Gaussian Noise', 'Smooth Uniform Noise', 'Gaussian Noise', 'Uniform Noise'],
             style=Pack(padding=10),
-            on_change=self.on_wave_type_select
+            on_change=self.update_target_parameters
         )
         pad_left_right = Pack(padding=(0, 10, 0, 10))
-        self.amplitude_slider = toga.Slider(min=0.1, max=10, value=1, on_release=self.on_slider_change, style=pad_left_right)
-        self.offset_slider = toga.Slider(min=-5, max=5, value=0, on_release=self.on_slider_change, style=pad_left_right)
-        self.phase_slider = toga.Slider(min=0, max=2*np.pi, value=0, on_release=self.on_slider_change, style=pad_left_right)
-        self.frequency_slider = toga.Slider(min=0.1, max=10, value=1, on_release=self.on_slider_change, style=pad_left_right)
+        self.amplitude_slider = toga.Slider(min=0.1, max=10, value=1, on_release=self.update_target_parameters, style=pad_left_right)
+        self.offset_slider = toga.Slider(min=-5, max=5, value=0, on_release=self.update_target_parameters, style=pad_left_right)
+        self.phase_slider = toga.Slider(min=0, max=2*np.pi, value=0, on_release=self.update_target_parameters, style=pad_left_right)
+        self.frequency_slider = toga.Slider(min=0.1, max=10, value=1, on_release=self.update_target_parameters, style=pad_left_right)
 
         self.target_controls = toga.Box(
             children=[
@@ -133,10 +140,7 @@ class oscillators(toga.App):
             style=Pack(direction=COLUMN)
         )
 
-    def on_slider_change(self, widget):
-        self.on_wave_type_select(None)
-
-    def on_wave_type_select(self, widget):
+    def update_target_parameters(self, widget):
         # Stop the current animation
         self.target_animation.event_source.stop()
 
@@ -167,11 +171,12 @@ class oscillators(toga.App):
             self.target_plot.target = target.UniformNoiseTarget(1, SAMPLING_RATE, amplitude=self.amplitude_slider.value, offset=self.offset_slider.value)
 
         # Start a new animation with the selected wave type
-        self.start_animation()
+        self.start_target_animation()
 
-        # Update the WebView to display the new gif
-        if self.target_gif:
-            self.target_web_view.url = f"http://localhost:{PORT}/{self.target_gif.name}"
+    def update_oscillator_parameters(self, widget):
+        self.oscillator_plot = None
+        self.setup_oscillator_plot()
+        self.start_oscillator_animation(None)
 
     def setup_target_plot(self):
         @dataclass
@@ -187,7 +192,7 @@ class oscillators(toga.App):
     def setup_oscillator_plot(self):
         @dataclass
         class OscillatorPlot:
-            n_oscillators = 2
+            n_oscillators = int(self.n_oscillators_slider.value)
             n_rows, n_cols = plot_layout.infer_subplot_rows_cols(n_oscillators)
             fig, axs = plt.subplots(n_rows, n_cols)
             canvas = FigureCanvas(fig)
@@ -196,8 +201,9 @@ class oscillators(toga.App):
             oscillator_grid = target.OscillatorGrid(oscillators)
             lines = []
             for i in range(n_oscillators):
-                lines.append(axs[i].plot([], [], lw=2)[0])
-        
+                ax = plot_layout.select_axis(axs, n_cols, i)
+                lines.append(ax.plot([], [], lw=2)[0])
+
         self.oscillator_plot = OscillatorPlot()
 
     def setup_target_webview(self):
@@ -215,15 +221,17 @@ class oscillators(toga.App):
         self.main_window.content = animation_and_controls
         self.main_window.show()
 
-    def start_animation(self):
-        if not self.generating_target:
-            self.generating_target = True
-            self.target_animation_thread = threading.Thread(target=self.generate_target_gif)
-            self.target_animation_thread.start()
+    def start_oscillator_animation(self, widget):
         if not self.generating_oscillators:
             self.generating_oscillators = True
             self.oscillator_animation_thread = threading.Thread(target=self.generate_oscillator_gif)
             self.oscillator_animation_thread.start()
+
+    def start_target_animation(self):
+        if not self.generating_target:
+            self.generating_target = True
+            self.target_animation_thread = threading.Thread(target=self.generate_target_gif)
+            self.target_animation_thread.start()
 
     def generate_target_gif(self):
         self.target_animation = animation.FuncAnimation(
@@ -243,6 +251,7 @@ class oscillators(toga.App):
         self.target_web_view.url = f"http://localhost:{PORT}/{self.target_gif.name}"
 
     def generate_oscillator_gif(self):
+        # self.oscillator_animation.event_source.stop()
         self.oscillator_animation = animation.FuncAnimation(
             self.oscillator_plot.fig,
             self.oscillator_plot.oscillator_grid.animate,
@@ -270,6 +279,7 @@ class oscillators(toga.App):
         
         # Load the GIF file into the WebView
         self.target_web_view.url = f"http://localhost:{PORT}/{self.placeholder_gif.name}"
+        self.oscillators_web_view.url = f"http://localhost:{PORT}/{self.placeholder_gif.name}"
 
 def main():
     return oscillators()
