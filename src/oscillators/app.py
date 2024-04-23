@@ -21,7 +21,7 @@ from dataclasses import dataclass
 import oscillators.target as target
 import oscillators.plot_layout as plot_layout
 
-PORT = 8003
+PORT = 8002
 NUM_FRAMES = 40
 SAMPLING_RATE = 100
 
@@ -119,8 +119,9 @@ class oscillators(toga.App):
         )
         self.optimize_toggle = toga.Switch(
             text='Optimize',
-            enabled=False,
-            style=Pack(padding=(10, 10, 0, 10))
+            value=False,
+            style=Pack(padding=(10, 10, 0, 10)),
+            on_change=self.optimize_ensemble
         )
 
         self.oscillator_controls = toga.Box(
@@ -136,6 +137,22 @@ class oscillators(toga.App):
             style=Pack(direction=COLUMN)
         )
 
+    def optimize_ensemble(self, widget):
+        if self.optimize_toggle.value == True:
+            # disable oscillator controls
+            self.optimization_algorithm.enabled = False
+            self.oscillator_wave_type.enabled = False
+            self.n_oscillators_slider.enabled = False
+            # disable target controls
+            for child in self.target_controls.children:
+                child.enabled = False
+        else:
+            self.optimization_algorithm.enabled = True
+            self.oscillator_wave_type.enabled = True
+            self.n_oscillators_slider.enabled = True
+            for child in self.target_controls.children:
+                child.enabled = True
+
     def setup_target_controls(self):
         self.wave_type = toga.Selection(
             items=['Sine', 'Triangle', 'Square', 'Sawtooth', 'Inverse Sawtooth', 'Chirp', 'Beat', 'Damp Chirp',
@@ -144,22 +161,22 @@ class oscillators(toga.App):
             on_change=self.update_target_parameters
         )
         pad_left_right = Pack(padding=(0, 10, 0, 10))
-        self.amplitude_slider = toga.Slider(min=0.1, max=10, value=1, on_release=self.update_target_parameters, style=pad_left_right)
-        self.offset_slider = toga.Slider(min=-5, max=5, value=0, on_release=self.update_target_parameters, style=pad_left_right)
-        self.phase_slider = toga.Slider(min=0, max=2*np.pi, value=0, on_release=self.update_target_parameters, style=pad_left_right)
-        self.frequency_slider = toga.Slider(min=0.1, max=10, value=1, on_release=self.update_target_parameters, style=pad_left_right)
+        self.target_amplitude_slider = toga.Slider(min=0.1, max=10, value=1, on_release=self.update_target_parameters, style=pad_left_right)
+        self.target_offset_slider = toga.Slider(min=-5, max=5, value=0, on_release=self.update_target_parameters, style=pad_left_right)
+        self.target_phase_slider = toga.Slider(min=0, max=2*np.pi, value=0, on_release=self.update_target_parameters, style=pad_left_right)
+        self.target_frequency_slider = toga.Slider(min=0.1, max=10, value=1, on_release=self.update_target_parameters, style=pad_left_right)
 
         self.target_controls = toga.Box(
             children=[
                 self.wave_type,
                 toga.Label('Amplitude:', style=Pack(padding=(10, 10, 0, 10))),
-                self.amplitude_slider,
+                self.target_amplitude_slider,
                 toga.Label('Offset:', style=Pack(padding=(10, 10, 0, 10))),
-                self.offset_slider,
+                self.target_offset_slider,
                 toga.Label('Phase:', style=Pack(padding=(10, 10, 0, 10))),
-                self.phase_slider,
+                self.target_phase_slider,
                 toga.Label('Frequency:', style=Pack(padding=(10, 10, 0, 10))),
-                self.frequency_slider
+                self.target_frequency_slider
             ],
             style=Pack(direction=COLUMN)
         )
@@ -168,7 +185,11 @@ class oscillators(toga.App):
         # Stop the current animation
         self.target_animation.event_source.stop()
 
-        self.target_plot.target = self.select_wave_type(self.wave_type.value)
+        self.target_plot.target = self.select_wave_type(self.wave_type.value,
+                                                        self.target_frequency_slider.value,
+                                                        self.target_amplitude_slider.value,
+                                                        self.target_offset_slider.value,
+                                                        self.target_phase_slider.value)
 
         self.start_target_animation()
 
@@ -178,33 +199,36 @@ class oscillators(toga.App):
         self.start_oscillator_animation(None)
 
 
-    def select_wave_type(self, wave_type: str, *args, **kwargs) -> target.AbstractTarget:
+    def select_wave_type(self, wave_type: str,
+                         freq: float, amplitude: float, offset: float, phase: float,
+                         *args, **kwargs) -> target.AbstractTarget:
         """Return a target object from a string"""
+
         # Initialize new target
         if wave_type == 'Sine':
-            signal = target.SineTarget(1, SAMPLING_RATE, freq=self.frequency_slider.value, amplitude=self.amplitude_slider.value, offset=self.offset_slider.value, phase=self.phase_slider.value)
+            signal = target.SineTarget(1, SAMPLING_RATE, freq=freq, amplitude=amplitude, offset=offset, phase=phase)
         elif wave_type == 'Triangle':
-            signal = target.TriangleTarget(1, SAMPLING_RATE, freq=self.frequency_slider.value, amplitude=self.amplitude_slider.value, offset=self.offset_slider.value, phase=self.phase_slider.value)
+            signal = target.TriangleTarget(1, SAMPLING_RATE, freq=freq, amplitude=amplitude, offset=offset, phase=phase)
         elif wave_type == "Square":
-            signal = target.SquareTarget(1, SAMPLING_RATE, freq=self.frequency_slider.value, amplitude=self.amplitude_slider.value, offset=self.offset_slider.value, phase=self.phase_slider.value)
+            signal = target.SquareTarget(1, SAMPLING_RATE, freq=freq, amplitude=amplitude, offset=offset, phase=phase)
         elif wave_type == "Sawtooth":
-            signal = target.SawtoothTarget(1, SAMPLING_RATE, freq=self.frequency_slider.value, amplitude=self.amplitude_slider.value, offset=self.offset_slider.value, phase=self.phase_slider.value)
+            signal = target.SawtoothTarget(1, SAMPLING_RATE, freq=freq, amplitude=amplitude, offset=offset, phase=phase)
         elif wave_type == "Inverse Sawtooth":
-            signal = target.InverseSawtoothTarget(1, SAMPLING_RATE, freq=self.frequency_slider.value, amplitude=self.amplitude_slider.value, offset=self.offset_slider.value, phase=self.phase_slider.value)
+            signal = target.InverseSawtoothTarget(1, SAMPLING_RATE, freq=freq, amplitude=amplitude, offset=offset, phase=phase)
         elif wave_type == "Chirp":
-            signal = target.ChirpTarget(1, SAMPLING_RATE, stop_freq=self.frequency_slider.value, amplitude=self.amplitude_slider.value, offset=self.offset_slider.value) # TODO: phase
+            signal = target.ChirpTarget(1, SAMPLING_RATE, stop_freq=freq, amplitude=amplitude, offset=offset) # TODO: phase
         elif wave_type == "Beat":
-            signal = target.BeatTarget(1, SAMPLING_RATE, base_freq=self.frequency_slider.value, amplitude=self.amplitude_slider.value, offset=self.offset_slider.value, phase=self.phase_slider.value)
+            signal = target.BeatTarget(1, SAMPLING_RATE, base_freq=freq, amplitude=amplitude, offset=offset, phase=phase)
         elif wave_type == "Damp Chirp":
-            signal = target.DampChirpTarget(1, SAMPLING_RATE, stop_freq=self.frequency_slider.value, amplitude=self.amplitude_slider.value, offset=self.offset_slider.value) # TODO: phase
+            signal = target.DampChirpTarget(1, SAMPLING_RATE, stop_freq=freq, amplitude=amplitude, offset=offset) # TODO: phase
         elif wave_type == "Smooth Gaussian Noise":
-            signal = target.SmoothGaussianNoiseTarget(1, SAMPLING_RATE, amplitude=self.amplitude_slider.value, offset=self.offset_slider.value) # TODO: window-length
+            signal = target.SmoothGaussianNoiseTarget(1, SAMPLING_RATE, amplitude=amplitude, offset=offset) # TODO: window-length
         elif wave_type == "Smooth Uniform Noise":
-            signal = target.SmoothUniformNoiseTarget(1, SAMPLING_RATE, amplitude=self.amplitude_slider.value, offset=self.offset_slider.value) # TODO: window-length
+            signal = target.SmoothUniformNoiseTarget(1, SAMPLING_RATE, amplitude=amplitude, offset=offset) # TODO: window-length
         elif wave_type == "Gaussian Noise":
-            signal = target.GaussianNoiseTarget(1, SAMPLING_RATE, amplitude=self.amplitude_slider.value, offset=self.offset_slider.value)
+            signal = target.GaussianNoiseTarget(1, SAMPLING_RATE, amplitude=amplitude, offset=offset)
         elif wave_type == "Uniform Noise":
-            signal = target.UniformNoiseTarget(1, SAMPLING_RATE, amplitude=self.amplitude_slider.value, offset=self.offset_slider.value)        
+            signal = target.UniformNoiseTarget(1, SAMPLING_RATE, amplitude=amplitude, offset=offset)        
         else:
             raise ValueError("Invalid wave type")
         return signal
@@ -230,7 +254,9 @@ class oscillators(toga.App):
             
             oscillators = []
             for _ in range(n_oscillators):
-                oscillators.append(self.select_wave_type(self.oscillator_wave_type.value))
+                wave = self.select_wave_type(self.oscillator_wave_type.value,
+                                             1, 1, 0, 0)
+                oscillators.append(wave)
             oscillator_grid = target.OscillatorGrid(oscillators)
             lines = []
             for i in range(n_oscillators):
