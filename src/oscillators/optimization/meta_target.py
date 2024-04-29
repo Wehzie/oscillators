@@ -5,11 +5,11 @@ The MetaTarget class bundles a signal with its time axis and other metadata.
 The subclasses implement different ways to load a signal from file or generate a signal.
 """
 
-import gen_signal_args_types as party
-import data_io
-import data_preprocessor
-import const
-import data_analysis
+from . import gen_signal_args_types as party
+from . import data_io
+from . import data_preprocessor
+from . import const
+from . import data_analysis
 
 from typing import Final, Union
 from pathlib import Path

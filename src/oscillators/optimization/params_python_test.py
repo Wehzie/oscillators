@@ -9,13 +9,13 @@ For each type of experiment three values are defined to generate a plot with a v
 For example: 10, 20 and 30 oscillators.
 """
 
-import gen_signal_args_types as party
-import sweep_types as sweety
-import const
-import parameter_builder
-import dist
-import gen_signal_python
-import shared_params_target
+from . import gen_signal_args_types as party
+from . import sweep_types as sweety
+from . import const
+from . import parameter_builder
+from . import dist
+from . import gen_signal_python
+from . import shared_params_target
 
 RNG = const.RNG
 MAX_Z_OPS = 150

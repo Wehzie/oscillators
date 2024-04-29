@@ -13,7 +13,7 @@ import matplotlib.colors as mcolors
 
 TABLEAU_COLORS: List[str] = [color for color in list(mcolors.TABLEAU_COLORS.values())]  # HEX colors
 
-import algo
+from . import algo
 
 
 @dataclass

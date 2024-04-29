@@ -4,7 +4,7 @@ This module implements multiple instances of the ExperimentMask class.
 Each instance describes which algorithms are compared against each other.
 """
 
-import mask_type
+from . import mask_type
 
 m1 = mask_type.ExperimentMask(
     "full_vs_weight",

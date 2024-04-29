@@ -5,12 +5,12 @@ Las vegas algorithms have non-deterministic runtime and draw from randomness to 
 """
 
 import copy
-import gen_signal_python as gensi_python  # TODO: remove once init_las_vegas is removed
-import algo
-import sample
-import const
-
 from typing import List, Tuple, Union
+
+from . import gen_signal_python as gensi_python  # TODO: remove once init_las_vegas is removed
+from . import algo
+from . import sample
+from . import const
 
 import numpy as np
 

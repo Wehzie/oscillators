@@ -1,11 +1,11 @@
 """This module defines production parameters for the SpiPy (Spice+Python, Hybrid) signal generator."""
 
-import gen_signal_args_types as party
-import dist
-import const
-import sweep_types as sweety
-import shared_params_target
-import gen_signal_spipy
+from . import gen_signal_args_types as party
+from . import dist
+from . import const
+from . import sweep_types as sweety
+from . import shared_params_target
+from . import gen_signal_spipy
 
 
 RNG = const.RNG

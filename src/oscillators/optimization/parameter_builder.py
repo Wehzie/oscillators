@@ -3,12 +3,12 @@
 from pathlib import Path
 from typing import List, Final, Tuple
 
-import gen_signal_args_types as party
+from . import gen_signal_args_types as party
 
-import dist
-import data_preprocessor
-import data_io
-import const
+from . import dist
+from . import data_preprocessor
+from . import data_io
+from . import const
 
 
 def estimate_summed_offset(

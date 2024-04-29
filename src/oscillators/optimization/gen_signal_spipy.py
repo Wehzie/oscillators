@@ -14,13 +14,13 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-import gen_signal
-import data_analysis
-import data_io
-import data_preprocessor
-import gen_signal_args_types as party
-import netlist_generator
-import const
+from . import gen_signal
+from . import data_analysis
+from . import data_io
+from . import data_preprocessor
+from . import gen_signal_args_types as party
+from . import netlist_generator
+from . import const
 
 DF_CACHE = None
 

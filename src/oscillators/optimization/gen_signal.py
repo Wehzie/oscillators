@@ -6,11 +6,11 @@ import copy
 from abc import ABC, abstractmethod
 from typing import Union, Tuple, List
 
-import data_analysis
-import gen_signal_args_types as party
-import sample
-import dist
-import const
+from . import data_analysis
+from . import gen_signal_args_types as party
+from . import sample
+from . import dist
+from . import const
 
 
 class SignalGenerator(ABC):

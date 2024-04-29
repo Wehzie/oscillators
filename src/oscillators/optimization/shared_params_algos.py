@@ -6,17 +6,17 @@ A function is provided to produce a list of algorithms with partially shared arg
 
 from typing import List, Union
 
-import algo_args_type as algarty
-import algo_args_bundle as algabun
-import algo
-import algo_las_vegas as alave
-import algo_monte_carlo as almoca
-import algo_evolution as alevo
-import algo_gradient as algra
-import algo_mcmc as almcmc
-import gen_signal_args_types as party
-import meta_target
-import gen_signal
+from . import algo_args_type as algarty
+from . import algo_args_bundle as algabun
+from . import algo
+from . import algo_las_vegas as alave
+from . import algo_monte_carlo as almoca
+from . import algo_evolution as alevo
+from . import algo_gradient as algra
+from . import algo_mcmc as almcmc
+from . import gen_signal_args_types as party
+from . import meta_target
+from . import gen_signal
 
 
 def bundle_algos_with_args(

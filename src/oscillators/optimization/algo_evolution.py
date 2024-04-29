@@ -7,10 +7,10 @@ but they are harder to implement than monte carlo methods, as candidate solution
 
 from scipy.optimize import differential_evolution
 import numpy as np
-import algo
-import sample
-import data_analysis
-import const
+from . import algo
+from . import sample
+from . import data_analysis
+from . import const
 
 
 class DifferentialEvolution(algo.SearchAlgo):

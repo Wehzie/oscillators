@@ -8,8 +8,8 @@ from pathlib import Path
 from enum import Enum
 from typing import List, Union
 
-import meta_target
-import gen_signal_args_types as party
+from . import meta_target
+from . import gen_signal_args_types as party
 
 #### #### #### #### AUDIO FILE PATHS #### #### #### ####
 

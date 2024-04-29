@@ -7,8 +7,8 @@ This is to ask by what amount does oscillator i contribute to the observed loss 
 
 from typing import Tuple
 
-import sample
-import algo
+from . import sample
+from . import algo
 
 
 class LinearRegression(algo.SearchAlgo):

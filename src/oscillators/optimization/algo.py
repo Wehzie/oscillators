@@ -4,10 +4,10 @@ from abc import ABC, abstractmethod
 import pickle
 from typing import Callable, List, Tuple
 
-import sample
-import data_analysis
-import const
-import algo_args_type as algarty
+from . import sample
+from . import data_analysis
+from . import const
+from . import algo_args_type as algarty
 
 import numpy as np
 

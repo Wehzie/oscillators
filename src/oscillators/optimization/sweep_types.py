@@ -3,12 +3,13 @@
 from abc import ABC
 from dataclasses import dataclass
 from typing import Final, List, Union
-import dist
-import algo_args_bundle
-import mask_type
-import meta_target
-import gen_signal_args_types as party
-import gen_signal
+
+from . import dist
+from . import algo_args_bundle
+from . import mask_type
+from . import meta_target
+from . import gen_signal_args_types as party
+from . import gen_signal
 
 
 @dataclass

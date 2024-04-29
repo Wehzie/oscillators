@@ -109,30 +109,30 @@ args = parser.parse_args()
 
 print(f"Running simulation with {args}")
 
-import const
+from . import const
 
 if args.production:
     print("Configuration set to run simulation with production parameters.")
     const.TEST_PARAMS = False
 
-import data_io
-import data_analysis
-import experimenteur
+from . import data_io
+from . import data_analysis
+from . import experimenteur
 
 if const.TEST_PARAMS:
     print("Import test parameters.")
-    import params_python_test as python_parameters
-    import params_hybrid_test as hybrid_parameters
+    from . import params_python_test as python_parameters
+    from . import params_hybrid_test as hybrid_parameters
 else:
     print("Import production parameters.")
-    import params_python as python_parameters
-    import params_hybrid as hybrid_parameters
-import shared_params_target
-import gen_signal_python
-import gen_signal_spipy
-import sweep_builder
-import matplotlib.pyplot as plt
+    from . import params_python as python_parameters
+    from . import params_hybrid as hybrid_parameters
+from . import shared_params_target
+from . import gen_signal_python
+from . import gen_signal_spipy
+from . import sweep_builder
 
+import matplotlib.pyplot as plt
 plt.rcParams.update({"font.size": 8})
 
 legal_python_experiments = [

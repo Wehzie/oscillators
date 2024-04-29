@@ -6,7 +6,7 @@ from enum import Enum
 
 import numpy as np
 
-import dist
+from . import dist
 
 #### #### #### #### PYTHON SIGNALS #### #### #### ####
 

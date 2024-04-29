@@ -11,12 +11,12 @@ For this reason, Monte Carlo algorithms are a good starting point for neuromorph
 import copy
 from typing import Tuple, List
 
-import algo
-import sample
-import const
+from . import algo
+from . import sample
+from . import const
 
-import algo_args_type as algarty
-import gen_signal
+from . import algo_args_type as algarty
+from . import gen_signal
 
 import numpy as np
 from tqdm import tqdm

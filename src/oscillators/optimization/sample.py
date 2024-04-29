@@ -17,12 +17,12 @@ from typing import List, Union
 from sklearn.linear_model import LinearRegression
 import matplotlib.pyplot as plt
 
-import gen_signal_args_types as party
-import data_analysis
-import data_preprocessor
-import meta_target
-import data_io
-import const
+from . import gen_signal_args_types as party
+from . import data_analysis
+from . import data_preprocessor
+from . import meta_target
+from . import data_io
+from . import const
 
 
 class Sample:

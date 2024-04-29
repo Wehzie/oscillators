@@ -5,9 +5,9 @@ The focus is on plotting one or two signals at a time.
 """
 
 from typing import Callable, List, Tuple, Union
-import data_io
-import data_preprocessor
-import meta_target
+from . import data_io
+from . import data_preprocessor
+from . import meta_target
 
 from pathlib import Path
 from functools import wraps

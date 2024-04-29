@@ -1,12 +1,12 @@
 """Production parameters required by the Python signal generator."""
 
-import gen_signal_args_types as party
-import sweep_types as sweety
-import const
-import dist
-import parameter_builder
-import gen_signal_python
-import shared_params_target
+from . import gen_signal_args_types as party
+from . import sweep_types as sweety
+from . import const
+from . import dist
+from . import parameter_builder
+from . import gen_signal_python
+from . import shared_params_target
 
 RNG = const.RNG
 MAX_Z_OPS = 20000

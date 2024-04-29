@@ -13,7 +13,7 @@ import pickle
 import shutil
 import sys
 
-import const
+from . import const
 
 from scipy.io.wavfile import write
 from scipy.io.wavfile import read

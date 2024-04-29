@@ -1,24 +1,25 @@
 """This module bundles sweep parameters into a set of algorithm sweeps accessible through an enum."""
 
 from typing import Union
-import const
-import sweep_types as sweety
-import meta_target
-import gen_signal_args_types as party
-import gen_signal
-import gen_signal_python
-import gen_signal_spipy
-import shared_params_mask
-import shared_params_algos
+
+from . import const
+from . import sweep_types as sweety
+from . import meta_target
+from . import gen_signal_args_types as party
+from . import gen_signal
+from . import gen_signal_python
+from . import gen_signal_spipy
+from . import shared_params_mask
+from . import shared_params_algos
 
 if const.TEST_PARAMS:
     print("Import test parameters.")
-    import params_python_test as python_parameters
-    import params_hybrid_test as hybrid_parameters
+    from . import params_python_test as python_parameters
+    from . import params_hybrid_test as hybrid_parameters
 else:
     print("Import production parameters.")
-    import params_python as python_parameters
-    import params_hybrid as hybrid_parameters
+    from . import params_python as python_parameters
+    from . import params_hybrid as hybrid_parameters
 
 
 def build_algo_sweep(

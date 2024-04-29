@@ -1,7 +1,7 @@
 """This module implements a class that bundles together an algorithm and its arguments."""
 
-import algo
-import algo_args_type as algarty
+from . import algo
+from . import algo_args_type as algarty
 from dataclasses import dataclass
 
 

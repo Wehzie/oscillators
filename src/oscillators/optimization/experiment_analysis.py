@@ -4,10 +4,10 @@ This module implements functions for plotting and analyzing the results of exper
 The focus is on comparing multiple algorithms.
 """
 
-import result_types as resty
-import const
-import gen_signal_args_types as party
-import data_io
+from . import result_types as resty
+from . import const
+from . import gen_signal_args_types as party
+from . import data_io
 
 from typing import Callable, List, Set, Union, Tuple
 from pathlib import Path

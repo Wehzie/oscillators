@@ -10,22 +10,22 @@ from typing import Final, Iterable, List, Tuple, Union
 from multiprocessing import Pool, cpu_count
 from functools import partial
 
-import data_analysis
-import experiment_analysis as expan
-import gen_signal_args_types as party
-import sweep_types as sweety
-import result_types as resty
-import algo
-import meta_target
-import const
-import data_io
-import shared_params_target
-import sample
-import gen_signal_python
-import gen_signal_spipy
-import sweep_builder
-import algo_args_bundle
-import algo_args_type
+from . import data_analysis
+from . import experiment_analysis as expan
+from . import gen_signal_args_types as party
+from . import sweep_types as sweety
+from . import result_types as resty
+from . import algo
+from . import meta_target
+from . import const
+from . import data_io
+from . import shared_params_target
+from . import sample
+from . import gen_signal_python
+from . import gen_signal_spipy
+from . import sweep_builder
+from . import algo_args_bundle
+from . import algo_args_type
 
 if const.TEST_PARAMS:
     print("Import test parameters.")

@@ -7,8 +7,8 @@ import networkx as nx
 import numpy as np
 import matplotlib.pyplot as plt
 
-import gen_signal_args_types as party
-import const
+from . import gen_signal_args_types as party
+from . import const
 
 # see https://github.com/PySpice-org/PySpice
 

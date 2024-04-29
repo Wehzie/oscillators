@@ -2,7 +2,7 @@
 
 from dataclasses import dataclass
 
-import algo_args_type as algarty
+from . import algo_args_type as algarty
 
 
 @dataclass

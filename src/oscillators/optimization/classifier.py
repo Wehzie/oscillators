@@ -4,7 +4,7 @@ given a forest of ensembles trained on various target functions,
 the ensembles are compared to an unknown target function by RMSE,
 this generates a probability distribution over the ensembles
 """
-import const
+from . import const
 
 if const.TEST_PARAMS:
     print("Import test parameters.")
@@ -13,14 +13,14 @@ else:
     print("Import production parameters.")
     import params_hybrid as hybrid_parameters
 
-import meta_target
-import sample
-import data_analysis
-import algo_args_bundle
-import gen_signal_spipy
-import shared_params_target
-import algo_las_vegas
-import algo_args_type
+from . import meta_target
+from . import sample
+from . import data_analysis
+from . import algo_args_bundle
+from . import gen_signal_spipy
+from . import shared_params_target
+from . import algo_las_vegas
+from . import algo_args_type
 
 import numpy as np
 

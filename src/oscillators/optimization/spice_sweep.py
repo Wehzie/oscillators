@@ -8,11 +8,11 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
-import gen_signal_spipy
-import data_analysis
-import gen_signal_args_types as party
-import const
-import data_preprocessor
+from . import gen_signal_spipy
+from . import data_analysis
+from . import gen_signal_args_types as party
+from . import const
+from . import data_preprocessor
 
 base_args = party.SpiceSingleDetArgs(
     n_osc=1,

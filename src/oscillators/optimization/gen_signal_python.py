@@ -5,16 +5,16 @@ Signals are generated fully within the Python environment.
 """
 
 from typing import List, Tuple, Union
-import data_analysis
+from . import data_analysis
 
 import numpy as np
 import scipy.signal
 import matplotlib.pyplot as plt
 
-import gen_signal_args_types as party
-import const
-import dist
-import gen_signal
+from . import gen_signal_args_types as party
+from . import const
+from . import dist
+from . import gen_signal
 
 
 class PythonSigGen(gen_signal.SignalGenerator):

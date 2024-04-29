@@ -3,10 +3,10 @@ from dataclasses import dataclass
 from typing import List, Union
 from pathlib import Path
 
-import gen_signal
-import const
-import gen_signal_args_types as party
-import meta_target
+from . import gen_signal
+from . import const as const
+from . import gen_signal_args_types as party
+from . import meta_target
 
 
 @dataclass
