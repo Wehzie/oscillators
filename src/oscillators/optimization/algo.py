@@ -30,7 +30,7 @@ class SearchAlgo(ABC):
         # k_samples is optional, and is inferred from z_ops if not provided
 
         # parameters applying to a subset of algorithms
-        self.j_replace = algo_args.j_replace
+        self.j_replace = algo_args.j_replace if algo_args.j_replace is not None else 1
         self.l_damp_prob = algo_args.l_damp_prob
         self.h_damp_fac = algo_args.h_damp_fac
 

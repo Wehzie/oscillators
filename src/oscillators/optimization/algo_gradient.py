@@ -27,3 +27,11 @@ class LinearRegression(algo.SearchAlgo):
         reg_sample = sample.Sample.regress_sample(best_sample, self.target)
 
         return reg_sample, self.z_ops
+
+    def draw_temp_sample(self) -> sample.Sample:
+        """draw a sample from the target"""
+        raise NotImplementedError
+
+    def init_best_sample(self) -> sample.Sample:
+        """initialize the best sample"""
+        raise NotImplementedError
