@@ -21,6 +21,15 @@ from dataclasses import dataclass
 import oscillators.target as target
 import oscillators.plot_layout as plot_layout
 
+import oscillators.const as const
+import oscillators.optimization.dist as dist
+import oscillators.optimization.gen_signal_python as python_generator
+import oscillators.optimization.gen_signal_args_types as generator_distribution
+import oscillators.optimization.algo_args_type as algo_args
+import oscillators.optimization.algo_gradient as algo_gradient
+import oscillators.optimization.algo_las_vegas as algo_las_vegas
+import oscillators.optimization.algo_monte_carlo as algo_monte_carlo
+
 PORT = 8002
 NUM_FRAMES = 40
 SAMPLING_RATE = 100
@@ -117,6 +126,7 @@ class oscillators(toga.App):
                    ],
             style=Pack(padding=10)
         )
+        self.perturbations_slider = toga.NumberInput(min=1, max=10000, value=100, style=pad_left_right)
         self.optimize_toggle = toga.Switch(
             text='Optimize',
             value=False,
@@ -130,6 +140,8 @@ class oscillators(toga.App):
                 self.n_oscillators_slider,
                 toga.Label('Wave type:', style=Pack(padding=(10, 10, 0, 10))),
                 self.oscillator_wave_type,
+                toga.Label('Perturbations:', style=Pack(padding=(10, 10, 0, 10))),
+                self.perturbations_slider,
                 toga.Label('Optimization algorithm:', style=Pack(padding=(10, 10, 0, 10))),
                 self.optimization_algorithm,
                 self.optimize_toggle
@@ -146,12 +158,48 @@ class oscillators(toga.App):
             # disable target controls
             for child in self.target_controls.children:
                 child.enabled = False
+            # begin optimization
+            n_osc = int(self.n_oscillators_slider.value)
+            self.generator_distribution = generator_distribution.PythonSignalRandArgs(
+                description="test base-parameters for drawing oscillators from a uniform distribution",
+                n_osc=n_osc,
+                duration=1,
+                samples=SAMPLING_RATE,
+                freq_dist=dist.Dist(const.RNG.uniform, low=0.1, high=10),
+                amplitude=0.5,
+                weight_dist=dist.WeightDist(
+                    const.RNG.uniform, low=0, high=10, n=n_osc
+                ),
+                phase_dist=dist.Dist(
+                    const.RNG.uniform, low=-1 / 3, high=1 / 3
+                ),
+                offset_dist=dist.Dist(const.RNG.uniform, low=0, high=0),
+                sampling_rate=SAMPLING_RATE,
+            )
+            self.signal_generator = python_generator.PythonSigGen()
+            self.optimizer_args = algo_args.AlgoArgs(
+                self.signal_generator,
+                self.generator_distribution,
+                self.target_plot.target,
+                max_z_ops=int(self.perturbations_slider.value))
+            OptimizationAlgo = self.select_optimization_algorithm(self.optimization_algorithm.value)
+            self.optimizer = OptimizationAlgo(self.optimizer_args)
+            # start thread
+            self.optimize_thread = threading.Thread(target=self.optimize_ensemble_thread)
+            self.optimize_thread.start()
+
         else:
             self.optimization_algorithm.enabled = True
             self.oscillator_wave_type.enabled = True
             self.n_oscillators_slider.enabled = True
             for child in self.target_controls.children:
                 child.enabled = True
+
+    def optimize_ensemble_thread(self):
+        sample, ops = self.optimizer.search()
+        print(sample)
+        print(ops)
+        self.optimize_toggle.value = False
 
     def setup_target_controls(self):
         self.wave_type = toga.Selection(
@@ -232,6 +280,17 @@ class oscillators(toga.App):
         else:
             raise ValueError("Invalid wave type")
         return signal
+    
+    def select_optimization_algorithm(self, algo_type: str, *args, **kwargs):
+        if algo_type == "Linear Regression":
+            algo = algo_gradient.LinearRegression
+        elif algo_type == "Monte Carlo Random Walk":
+            algo = algo_monte_carlo.MCExploitWeight
+        elif algo_type == "Las Vegas Random Walk":
+            algo = algo_las_vegas.LasVegasWeight
+        else:
+            raise ValueError("Invalid optimization algorithm")
+        return algo
     
     def setup_target_plot(self):
         @dataclass
