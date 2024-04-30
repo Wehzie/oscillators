@@ -38,21 +38,25 @@ SAMPLING_RATE = 100
 class oscillators(toga.App):
     def startup(self):
         self.generating_target = False
+        self.generating_prediction = False
         self.generating_oscillators = False
         self.on_exit = self.exit_handler
 
         self.setup_target_webview()
+        self.setup_prediction_webview()
         self.setup_oscillators_webview()
         self.setup_controls_bar()
         self.compose_window()
 
         self.setup_target_plot()
+        self.setup_prediction_plot()
         self.setup_oscillator_plot()
 
         self.init_gifs()
         
         self.start_target_animation()
         self.start_oscillator_animation(None)
+        self.start_prediction_animation()
         self.start_server()
 
         self.global_counter = 0
@@ -61,6 +65,7 @@ class oscillators(toga.App):
     def init_gifs(self):
         self.target_gif = None
         self.oscillator_gif = None
+        self.prediction_gif = None # predicted approximation of the target
         self.create_placeholder_gif()
 
     def create_placeholder_gif(self):
@@ -303,6 +308,17 @@ class oscillators(toga.App):
 
         self.target_plot = TargetPlot()
 
+    def setup_prediction_plot(self):
+        @dataclass
+        class PredictionPlot:
+            fig = Figure()
+            canvas = FigureCanvas(fig)
+            ax = fig.add_subplot(111)
+            meta_signal = target.SquareTarget(1, SAMPLING_RATE)
+            line = ax.plot([], [], lw=2)[0]
+
+        self.prediction_plot = PredictionPlot()
+
     def setup_oscillator_plot(self):
         @dataclass
         class OscillatorPlot:
@@ -327,12 +343,20 @@ class oscillators(toga.App):
     def setup_target_webview(self):
         self.target_web_view = toga.WebView(style=Pack(flex=1))
 
+    def setup_prediction_webview(self):
+        self.prediction_web_view = toga.WebView(style=Pack(flex=1))
+
     def setup_oscillators_webview(self):
         self.oscillators_web_view = toga.WebView(style=Pack(flex=1))
 
     def compose_window(self):
-        spacer = toga.Box(style=Pack(height=30))
-        animations = toga.Box(children=[self.target_web_view, spacer, self.oscillators_web_view], style=Pack(direction=COLUMN, flex=2))
+        spacer1 = toga.Box(style=Pack(height=30))
+        spacer2 = toga.Box(style=Pack(height=30))
+        animations = toga.Box(children=[self.target_web_view,
+                                        spacer1,
+                                        self.oscillators_web_view,
+                                        spacer2,
+                                        self.prediction_web_view], style=Pack(direction=COLUMN, flex=2))
         
         animation_and_controls = toga.Box(children=[animations, self.controls_bar], style=Pack(direction=ROW))
         self.main_window = toga.MainWindow(title=self.formal_name)
@@ -344,6 +368,12 @@ class oscillators(toga.App):
             self.generating_oscillators = True
             self.oscillator_animation_thread = threading.Thread(target=self.generate_oscillator_gif)
             self.oscillator_animation_thread.start()
+
+    def start_prediction_animation(self):
+        if not self.generating_prediction:
+            self.generating_prediction = True
+            self.prediction_animation_thread = threading.Thread(target=self.generate_prediction_gif)
+            self.prediction_animation_thread.start()
 
     def start_target_animation(self):
         if not self.generating_target:
@@ -367,6 +397,23 @@ class oscillators(toga.App):
 
         # Update the WebView to display the new gif
         self.target_web_view.url = f"http://localhost:{PORT}/{self.target_gif.name}"
+
+    def generate_prediction_gif(self):
+        self.prediction_animation = animation.FuncAnimation(
+            self.prediction_plot.fig,
+            self.prediction_plot.meta_signal.animate,
+            fargs=(NUM_FRAMES, self.prediction_plot.fig, self.prediction_plot.line,),
+            frames=NUM_FRAMES,
+            interval=20,
+            repeat=True
+        )
+        with tempfile.NamedTemporaryFile(suffix=".gif", delete=False) as temp:
+            self.prediction_gif = Path(temp.name)
+        self.prediction_animation.save(self.prediction_gif, writer=PillowWriter(fps=80))
+        self.generating_prediction = False
+
+        # Update the WebView to display the new gif
+        self.prediction_web_view.url = f"http://localhost:{PORT}/{self.prediction_gif.name}"
 
     def generate_oscillator_gif(self):
         # self.oscillator_animation.event_source.stop()
@@ -397,6 +444,7 @@ class oscillators(toga.App):
         
         # Load the GIF file into the WebView
         self.target_web_view.url = f"http://localhost:{PORT}/{self.placeholder_gif.name}"
+        self.prediction_web_view.url = f"http://localhost:{PORT}/{self.placeholder_gif.name}"
         self.oscillators_web_view.url = f"http://localhost:{PORT}/{self.placeholder_gif.name}"
 
 def main():
