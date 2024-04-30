@@ -181,6 +181,37 @@ class MetaTargetTime(MetaTarget):
         return f"MetaTarget(signal={self.signal}, sampling_rate={self.sampling_rate}, dtype={self.dtype})"
 
 
+class MetaTargetSmart(MetaTarget):
+    """infer time or sample based processing based on the arguments"""
+
+    def __init__(
+        self,
+        signal: np.ndarray,
+        time: Union[np.ndarray, None] = None,
+        sampling_rate: Union[int, None] = None,
+        duration: Union[float, None] = None,
+        name: Union[str, None] = None,
+    ):
+        self.signal = signal
+        self.dtype = signal.dtype
+        self.samples = len(signal)
+        self.name = name if name else "Unnamed Signal"
+        if sampling_rate is not None:
+            self.sampling_rate = sampling_rate
+            self.duration = 1 / sampling_rate * self.samples
+            self.time = np.linspace(0, self.duration, self.samples, endpoint=False)
+        elif duration is not None:
+            self.duration = duration
+            self.sampling_rate = np.around(self.samples / duration).astype(int)
+            self.time = np.linspace(0, self.duration, self.samples, endpoint=False)
+        elif time is not None:
+            self.time = time
+            self.sampling_rate = np.around(1 / (time[1] - time[0])).astype(int)
+            self.duration = time[-1] - time[0]
+        else:
+            raise ValueError("either time, sampling rate or duration must be provided")
+
+
 #### #### #### #### SYNTHETIC TARGETS #### #### #### ####
 
 

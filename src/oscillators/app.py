@@ -1,23 +1,3 @@
-from pathlib import Path
-import toga
-from toga.style import Pack
-from toga.style.pack import COLUMN, ROW
-import matplotlib.pyplot as plt
-from matplotlib.figure import Figure
-from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
-import matplotlib.animation as animation
-from matplotlib.animation import PillowWriter
-from PIL import Image as PIL_Image
-from PIL import ImageDraw, ImageFont
-import numpy as np
-import threading
-import http.server
-import socketserver
-import os
-import tempfile
-import threading
-from dataclasses import dataclass
-
 import oscillators.optimization.data_analysis as data_analysis
 import oscillators.oscillator_grid as oscillator_grid
 import oscillators.optimization.const as const
@@ -30,27 +10,48 @@ import oscillators.optimization.algo_gradient as algo_gradient
 import oscillators.optimization.algo_las_vegas as algo_las_vegas
 import oscillators.optimization.algo_monte_carlo as algo_monte_carlo
 
+import toga
+from toga.style import Pack
+from toga.style.pack import COLUMN, ROW
+import matplotlib.pyplot as plt
+from matplotlib.figure import Figure
+from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
+import matplotlib.animation as animation
+from matplotlib.animation import PillowWriter
+from PIL import Image as PIL_Image
+from PIL import ImageDraw, ImageFont
+import numpy as np
+
+from pathlib import Path
+from typing import List
+import threading
+import http.server
+import socketserver
+import os
+import tempfile
+import threading
+from dataclasses import dataclass
+
 PORT = 8002
 NUM_FRAMES = 40
 SAMPLING_RATE = 100
 
-
 class oscillators(toga.App):
     def startup(self):
         self.generating_target = False
-        self.generating_prediction = False
         self.generating_oscillators = False
+        self.generating_prediction = False
         self.on_exit = self.exit_handler
 
         self.setup_target_webview()
-        self.setup_prediction_webview()
         self.setup_oscillators_webview()
+        self.setup_prediction_webview()
         self.setup_controls_bar()
         self.compose_window()
 
         self.setup_target_plot()
-        self.setup_prediction_plot()
         self.setup_oscillator_plot()
+        self.setup_prediction_plot()
 
         self.init_gifs()
         
@@ -117,12 +118,12 @@ class oscillators(toga.App):
                                                 max=12,
                                                 value=3,
                                                 style=pad_left_right,
-                                                on_release=self.update_oscillator_parameters)
+                                                on_release=self.update_oscillators_and_prediction)
         self.oscillator_wave_type = toga.Selection(
             items=['Sine', 'Triangle', 'Square', 'Sawtooth', 'Inverse Sawtooth', 'Chirp', 'Beat', 'Damp Chirp',
                    'Smooth Gaussian Noise', 'Smooth Uniform Noise', 'Gaussian Noise', 'Uniform Noise'],
             style=Pack(padding=10),
-            on_change=self.update_oscillator_parameters
+            on_change=self.update_oscillators_and_prediction
         )
         self.optimization_algorithm = toga.Selection(
             items=["Linear Regression",
@@ -246,11 +247,19 @@ class oscillators(toga.App):
 
         self.start_target_animation()
 
+    def update_oscillators_and_prediction(self, *args, **kwargs):
+        self.update_oscillator_parameters(None)
+        self.update_prediction_parameters(None)
+
     def update_oscillator_parameters(self, widget):
         self.oscillator_plot = None
         self.setup_oscillator_plot()
         self.start_oscillator_animation(None)
 
+    def update_prediction_parameters(self, *args, **kwargs):
+        self.prediction_plot = None
+        self.setup_prediction_plot()
+        self.start_prediction_animation()
 
     def select_wave_type(self, wave_type: str,
                          freq: float, amplitude: float, offset: float, phase: float,
@@ -309,12 +318,17 @@ class oscillators(toga.App):
         self.target_plot = TargetPlot()
 
     def setup_prediction_plot(self):
+
+        def sum_oscillators(oscillators: List, n_oscillators: int) -> np.ndarray:
+            return np.sum([oscillator.signal for oscillator in oscillators[:n_oscillators]], axis=0)
+
         @dataclass
         class PredictionPlot:
             fig = Figure()
             canvas = FigureCanvas(fig)
             ax = fig.add_subplot(111)
-            meta_signal = meta_target.SquareTarget(1, SAMPLING_RATE)
+            meta_signal = meta_target.MetaTargetSmart(signal=sum_oscillators(self.oscillator_plot.oscillators, self.oscillator_plot.n_oscillators),
+                                                 duration=1, sampling_rate=SAMPLING_RATE)
             line = ax.plot([], [], lw=2)[0]
 
         self.prediction_plot = PredictionPlot()
