@@ -202,10 +202,11 @@ class oscillators(toga.App):
                 child.enabled = True
 
     def optimize_ensemble_thread(self):
-        sample, ops = self.optimizer.search()
-        print(sample)
+        optimized_ensemble_sum, ops = self.optimizer.search()
+        print(optimized_ensemble_sum)
         print(ops)
         self.optimize_toggle.value = False
+        self.update_prediction_parameters(optimized_ensemble_sum)
 
     def setup_target_controls(self):
         self.wave_type = toga.Selection(
@@ -256,9 +257,9 @@ class oscillators(toga.App):
         self.setup_oscillator_plot()
         self.start_oscillator_animation(None)
 
-    def update_prediction_parameters(self, *args, **kwargs):
+    def update_prediction_parameters(self, optimized_ensemble_sum=None, *args, **kwargs):
         self.prediction_plot = None
-        self.setup_prediction_plot()
+        self.setup_prediction_plot(optimized_ensemble_sum)
         self.start_prediction_animation()
 
     def select_wave_type(self, wave_type: str,
@@ -317,7 +318,7 @@ class oscillators(toga.App):
 
         self.target_plot = TargetPlot()
 
-    def setup_prediction_plot(self):
+    def setup_prediction_plot(self, optimized_ensemble=None):
 
         def sum_oscillators(oscillators: List, n_oscillators: int) -> np.ndarray:
             return np.sum([oscillator.signal for oscillator in oscillators[:n_oscillators]], axis=0)
@@ -327,7 +328,10 @@ class oscillators(toga.App):
             fig = Figure()
             canvas = FigureCanvas(fig)
             ax = fig.add_subplot(111)
-            meta_signal = meta_target.MetaTargetSmart(signal=sum_oscillators(self.oscillator_plot.oscillators, self.oscillator_plot.n_oscillators),
+            if optimized_ensemble is not None:
+                meta_signal = meta_target.MetaTargetSmart(signal=optimized_ensemble.weighted_sum, duration=1, sampling_rate=SAMPLING_RATE)
+            else:
+                meta_signal = meta_target.MetaTargetSmart(signal=sum_oscillators(self.oscillator_plot.oscillators, self.oscillator_plot.n_oscillators),
                                                  duration=1, sampling_rate=SAMPLING_RATE)
             line = ax.plot([], [], lw=2)[0]
 
