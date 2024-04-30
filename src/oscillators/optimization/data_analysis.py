@@ -4,11 +4,10 @@ This module defines metrics and plots for the analysis of signals.
 The focus is on plotting one or two signals at a time. 
 """
 
-from typing import Callable, List, Tuple, Union
 from . import data_io
 from . import data_preprocessor
-from . import meta_target
 
+from typing import Callable, List, Tuple, Union
 from pathlib import Path
 from functools import wraps
 import time
@@ -32,10 +31,43 @@ def infer_subplot_rows_cols(n_signals: int) -> Tuple[int, int]:
     return n_rows, n_cols
 
 
+def select_axis(ax: Union[plt.Axes,
+                          np.ndarray[plt.Axes],
+                          np.ndarray[np.ndarray[plt.Axes]]
+                          ],
+                          n_axes: int,
+                          i: int) -> plt.Axes:
+    """select an axis from a scalar, 1d or 2d array of axes
+    
+    args:
+        ax: a scalar, 1d or 2d array of axes
+        n_axes: the number of axes in the array
+        i: the index of the axis to select
+        
+    returns:
+        the index selected axis object
+    """
+    # axes is a scalar
+    if isinstance(ax, plt.Axes):
+        return ax
+    # axes is a 1d array
+    elif len(ax) >= 1 and isinstance(ax[0], plt.Axes):
+        return ax[i]
+    # axes is a 2d array
+    elif len(ax) > 1 and len(ax[0]) > 1 and isinstance(ax[0][0], plt.Axes):
+        return ax[i // n_axes][i % n_axes]
+    else:
+        raise ValueError("ax must be a scalar, 1d or 2d list of axes")
+
+
 def plot_multiple_targets_common_axis(
-    targets: List[meta_target.MetaTarget], show: bool = False, save_path: Path = None
+    targets: List, show: bool = False, save_path: Path = None
 ) -> None:
-    """plot multiple targets by aligning to the number of samples in the target with the fewest samples"""
+    """plot multiple targets by aligning to the number of samples in the target with the fewest samples
+    
+    args:
+        targets: a list of MetaTarget to plot
+    """
     min_samples = min([target.samples for target in targets])
     time = np.linspace(0, 1, min_samples, endpoint=False)
     target_matrix = np.array([target.signal[:min_samples] for target in targets])
@@ -47,9 +79,13 @@ def plot_multiple_targets_common_axis(
 
 
 def plot_multiple_targets(
-    targets: List[meta_target.MetaTarget], show: bool = False, save_path: Path = None
+    targets: List, show: bool = False, save_path: Path = None
 ) -> None:
-    """plot multiple targets in a grid of subplots; plots are aligned on one time axis"""
+    """plot multiple targets in a grid of subplots; plots are aligned on one time axis
+    
+    args:
+        targets: a list of MetaTarget to plot
+    """
     nrows, ncols = infer_subplot_rows_cols(len(targets))
     _, axes = plt.subplots(nrows, ncols, layout="constrained")
     for i, ax in enumerate(axes.flat):

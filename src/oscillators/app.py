@@ -18,10 +18,10 @@ import tempfile
 import threading
 from dataclasses import dataclass
 
-import oscillators.target as target
-import oscillators.plot_layout as plot_layout
-
-import oscillators.const as const
+import oscillators.optimization.data_analysis as data_analysis
+import oscillators.oscillator_grid as oscillator_grid
+import oscillators.optimization.const as const
+import oscillators.optimization.meta_target as meta_target
 import oscillators.optimization.dist as dist
 import oscillators.optimization.gen_signal_python as python_generator
 import oscillators.optimization.gen_signal_args_types as generator_distribution
@@ -254,34 +254,34 @@ class oscillators(toga.App):
 
     def select_wave_type(self, wave_type: str,
                          freq: float, amplitude: float, offset: float, phase: float,
-                         *args, **kwargs) -> target.AbstractTarget:
+                         *args, **kwargs) -> meta_target.MetaTarget:
         """Return a target object from a string"""
 
         # Initialize new target
         if wave_type == 'Sine':
-            signal = target.SineTarget(1, SAMPLING_RATE, freq=freq, amplitude=amplitude, offset=offset, phase=phase)
+            signal = meta_target.SineTarget(1, SAMPLING_RATE, freq=freq, amplitude=amplitude, offset=offset, phase=phase)
         elif wave_type == 'Triangle':
-            signal = target.TriangleTarget(1, SAMPLING_RATE, freq=freq, amplitude=amplitude, offset=offset, phase=phase)
+            signal = meta_target.TriangleTarget(1, SAMPLING_RATE, freq=freq, amplitude=amplitude, offset=offset, phase=phase)
         elif wave_type == "Square":
-            signal = target.SquareTarget(1, SAMPLING_RATE, freq=freq, amplitude=amplitude, offset=offset, phase=phase)
+            signal = meta_target.SquareTarget(1, SAMPLING_RATE, freq=freq, amplitude=amplitude, offset=offset, phase=phase)
         elif wave_type == "Sawtooth":
-            signal = target.SawtoothTarget(1, SAMPLING_RATE, freq=freq, amplitude=amplitude, offset=offset, phase=phase)
+            signal = meta_target.SawtoothTarget(1, SAMPLING_RATE, freq=freq, amplitude=amplitude, offset=offset, phase=phase)
         elif wave_type == "Inverse Sawtooth":
-            signal = target.InverseSawtoothTarget(1, SAMPLING_RATE, freq=freq, amplitude=amplitude, offset=offset, phase=phase)
+            signal = meta_target.InverseSawtoothTarget(1, SAMPLING_RATE, freq=freq, amplitude=amplitude, offset=offset, phase=phase)
         elif wave_type == "Chirp":
-            signal = target.ChirpTarget(1, SAMPLING_RATE, stop_freq=freq, amplitude=amplitude, offset=offset) # TODO: phase
+            signal = meta_target.ChirpTarget(1, SAMPLING_RATE, stop_freq=freq, amplitude=amplitude, offset=offset) # TODO: phase
         elif wave_type == "Beat":
-            signal = target.BeatTarget(1, SAMPLING_RATE, base_freq=freq, amplitude=amplitude, offset=offset, phase=phase)
+            signal = meta_target.BeatTarget(1, SAMPLING_RATE, base_freq=freq, amplitude=amplitude, offset=offset, phase=phase)
         elif wave_type == "Damp Chirp":
-            signal = target.DampChirpTarget(1, SAMPLING_RATE, stop_freq=freq, amplitude=amplitude, offset=offset) # TODO: phase
+            signal = meta_target.DampChirpTarget(1, SAMPLING_RATE, stop_freq=freq, amplitude=amplitude, offset=offset) # TODO: phase
         elif wave_type == "Smooth Gaussian Noise":
-            signal = target.SmoothGaussianNoiseTarget(1, SAMPLING_RATE, amplitude=amplitude, offset=offset) # TODO: window-length
+            signal = meta_target.SmoothGaussianNoiseTarget(1, SAMPLING_RATE, amplitude=amplitude, offset=offset) # TODO: window-length
         elif wave_type == "Smooth Uniform Noise":
-            signal = target.SmoothUniformNoiseTarget(1, SAMPLING_RATE, amplitude=amplitude, offset=offset) # TODO: window-length
+            signal = meta_target.SmoothUniformNoiseTarget(1, SAMPLING_RATE, amplitude=amplitude, offset=offset) # TODO: window-length
         elif wave_type == "Gaussian Noise":
-            signal = target.GaussianNoiseTarget(1, SAMPLING_RATE, amplitude=amplitude, offset=offset)
+            signal = meta_target.GaussianNoiseTarget(1, SAMPLING_RATE, amplitude=amplitude, offset=offset)
         elif wave_type == "Uniform Noise":
-            signal = target.UniformNoiseTarget(1, SAMPLING_RATE, amplitude=amplitude, offset=offset)        
+            signal = meta_target.UniformNoiseTarget(1, SAMPLING_RATE, amplitude=amplitude, offset=offset)        
         else:
             raise ValueError("Invalid wave type")
         return signal
@@ -303,7 +303,7 @@ class oscillators(toga.App):
             fig = Figure()
             canvas = FigureCanvas(fig)
             ax = fig.add_subplot(111)
-            target = target.SineTarget(1, SAMPLING_RATE)
+            target = meta_target.SineTarget(1, SAMPLING_RATE)
             line = ax.plot([], [], lw=2)[0]  # initialize a line object
 
         self.target_plot = TargetPlot()
@@ -314,7 +314,7 @@ class oscillators(toga.App):
             fig = Figure()
             canvas = FigureCanvas(fig)
             ax = fig.add_subplot(111)
-            meta_signal = target.SquareTarget(1, SAMPLING_RATE)
+            meta_signal = meta_target.SquareTarget(1, SAMPLING_RATE)
             line = ax.plot([], [], lw=2)[0]
 
         self.prediction_plot = PredictionPlot()
@@ -323,7 +323,7 @@ class oscillators(toga.App):
         @dataclass
         class OscillatorPlot:
             n_oscillators = int(self.n_oscillators_slider.value)
-            n_rows, n_cols = plot_layout.infer_subplot_rows_cols(n_oscillators)
+            n_rows, n_cols = data_analysis.infer_subplot_rows_cols(n_oscillators)
             fig, axs = plt.subplots(n_rows, n_cols)
             canvas = FigureCanvas(fig)
             
@@ -332,10 +332,10 @@ class oscillators(toga.App):
                 wave = self.select_wave_type(self.oscillator_wave_type.value,
                                              1, 1, 0, 0)
                 oscillators.append(wave)
-            oscillator_grid = target.OscillatorGrid(oscillators)
+            oscillator_grid = oscillator_grid.OscillatorGrid(oscillators)
             lines = []
             for i in range(n_oscillators):
-                ax = plot_layout.select_axis(axs, n_cols, i)
+                ax = data_analysis.select_axis(axs, n_cols, i)
                 lines.append(ax.plot([], [], lw=2)[0])
 
         self.oscillator_plot = OscillatorPlot()

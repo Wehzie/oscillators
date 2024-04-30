@@ -11,13 +11,15 @@ from . import data_preprocessor
 from . import const
 from . import data_analysis
 
-from typing import Final, Union
+from typing import Final, Union, List
 from pathlib import Path
 from abc import ABC
 
 import numpy as np
 from scipy import signal
 from scipy import interpolate
+from matplotlib import figure
+import matplotlib.pyplot as plt
 
 #### #### #### #### REAL WORLD TARGETS #### #### #### ####
 
@@ -52,6 +54,17 @@ class MetaTarget(ABC):
         else:
             return data_analysis.get_max_freq_from_fft(self.signal, 1 / self.sampling_rate)
 
+    def animate(self, frame: int, num_frames: int, fig: figure.Figure, line: plt.Line2D) -> List:
+        """return the signal at a given frame index"""
+        animation_phase_shift = (frame / num_frames) * 2 * np.pi
+        shift_amount = int(animation_phase_shift / (2 * np.pi) * len(self.signal))
+        shifted_signal = np.roll(self.signal, -shift_amount)
+        y_pad = 0.05
+        fig.gca().set_xlim(self.time.min(), self.time.max())  # set x limits
+        fig.gca().set_ylim(shifted_signal.min() - y_pad, shifted_signal.max() + y_pad)  # set y limits
+        line.set_data(self.time, shifted_signal)
+        fig.canvas.draw()
+        return line
 
 class MetaTargetSample(MetaTarget):
     """load signal from file, save meta data; use sample based processing"""
