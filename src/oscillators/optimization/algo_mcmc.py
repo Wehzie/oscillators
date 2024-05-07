@@ -97,6 +97,9 @@ class BasinHopping(algo.SearchAlgo):
         we use gradient free COBYLA (Constrained Optimization BY Linear Approximation)
     """
 
+    def draw_temp_sample(self) -> sample.Sample:
+        raise NotImplementedError("BasinHopping does not support temporary samples")    
+
     def infer_k_from_z(self) -> int:
         """ignore iterations k and use `maxiter` instead, see search()"""
         return None
@@ -194,6 +197,9 @@ class ScipyAnneal(algo.SearchAlgo):
     def __init__(self, algo_args: algarty.AlgoArgs):
         super().__init__(algo_args)
         self.no_local_search = True
+
+    def draw_temp_sample(self) -> sample.Sample:
+        raise NotImplementedError("ScipyAnneal does not support temporary samples")
 
     def infer_k_from_z(self) -> int:
         """ignore iterations k and use `maxfun` instead, see search()"""

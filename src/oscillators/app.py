@@ -1,3 +1,4 @@
+from oscillators.optimization import algo_evolution, algo_mcmc
 import oscillators.optimization.data_analysis as data_analysis
 import oscillators.oscillator_grid as oscillator_grid
 import oscillators.optimization.const as const
@@ -129,10 +130,14 @@ class oscillators(toga.App):
             on_change=self.update_oscillators_and_prediction
         )
         self.optimization_algorithm = toga.Selection(
-            items=["Linear Regression",
-                   "Monte Carlo Random Walk", # MCExploit
-                   "Las Vegas Random Walk"
-                   ],
+            items=[ "Linear Regression (Sklearn)", # LinearRegression
+                    "Monte Carlo Random Walk", # MCExploitWeight
+                    "Las Vegas Random Walk", # LasVegasWeight
+                    "Monte Carlo Random Walk with Sampling", # MCExploit
+                    "Las Vegas Random Walk with Sampling", # LasVegas
+                    "Differential Evolution (SciPy)", # DifferentialEvolution
+                    "Basin Hopping (SciPy)", # BasinHopping
+                    "Simulated Annealing (SciPy)"], # ScipyAnneal
             style=Pack(padding=10)
         )
         self.perturbations_slider = toga.NumberInput(min=1, max=10000, value=100, style=pad_left_right)
@@ -302,12 +307,22 @@ class oscillators(toga.App):
         return signal
     
     def select_optimization_algorithm(self, algo_type: str, *args, **kwargs):
-        if algo_type == "Linear Regression":
+        if algo_type == "Linear Regression (Sklearn)":
             algo = algo_gradient.LinearRegression
         elif algo_type == "Monte Carlo Random Walk":
             algo = algo_monte_carlo.MCExploitWeight
         elif algo_type == "Las Vegas Random Walk":
             algo = algo_las_vegas.LasVegasWeight
+        elif algo_type == "Monte Carlo Random Walk with Sampling":
+            algo = algo_monte_carlo.MCExploit
+        elif algo_type == "Las Vegas Random Walk with Sampling":
+            algo = algo_las_vegas.LasVegas
+        elif algo_type == "Differential Evolution (SciPy)":
+            algo = algo_evolution.DifferentialEvolution
+        elif algo_type == "Basin Hopping (SciPy)":
+            algo = algo_mcmc.BasinHopping
+        elif algo_type == "Simulated Annealing (SciPy)":
+            algo = algo_mcmc.ScipyAnneal
         else:
             raise ValueError("Invalid optimization algorithm")
         return algo

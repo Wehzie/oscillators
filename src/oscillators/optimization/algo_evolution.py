@@ -16,6 +16,9 @@ from . import const
 class DifferentialEvolution(algo.SearchAlgo):
     """implement differential evolution algorithm using scipy.optimize.differential_evolution"""
 
+    def draw_temp_sample(self) -> sample.Sample:
+        raise NotImplementedError("DifferentialEvolution does not support temporary samples")
+
     def infer_k_from_z(self) -> int:
         """infer the number of loops/iterations k from the maximum number of perturbations z"""
         return None
