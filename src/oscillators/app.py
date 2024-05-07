@@ -9,6 +9,7 @@ import oscillators.optimization.algo_args_type as algo_args
 import oscillators.optimization.algo_gradient as algo_gradient
 import oscillators.optimization.algo_las_vegas as algo_las_vegas
 import oscillators.optimization.algo_monte_carlo as algo_monte_carlo
+import oscillators.optimization.sample as sample
 
 import toga
 from toga.style import Pack
@@ -23,7 +24,7 @@ from PIL import ImageDraw, ImageFont
 import numpy as np
 
 from pathlib import Path
-from typing import List
+from typing import List, Union
 import threading
 import http.server
 import socketserver
@@ -32,7 +33,7 @@ import tempfile
 import threading
 from dataclasses import dataclass
 
-PORT = 8002
+PORT = 8003
 NUM_FRAMES = 40
 SAMPLING_RATE = 100
 
@@ -56,7 +57,7 @@ class oscillators(toga.App):
         self.init_gifs()
         
         self.start_target_animation()
-        self.start_oscillator_animation(None)
+        self.start_oscillator_animation()
         self.start_prediction_animation()
         self.start_server()
 
@@ -99,6 +100,8 @@ class oscillators(toga.App):
                 self.target_animation_thread.join()
             if self.oscillator_animation_thread.is_alive():
                 self.oscillator_animation_thread.join()
+            if self.prediction_animation_thread.is_alive():
+                self.prediction_animation_thread.join()
             os.remove(self.placeholder_gif) # remove the temporary file
 
             return True
@@ -190,9 +193,12 @@ class oscillators(toga.App):
                 max_z_ops=int(self.perturbations_slider.value))
             OptimizationAlgo = self.select_optimization_algorithm(self.optimization_algorithm.value)
             self.optimizer = OptimizationAlgo(self.optimizer_args)
-            # start thread
+            # start worker thread
             self.optimize_thread = threading.Thread(target=self.optimize_ensemble_thread)
             self.optimize_thread.start()
+            # matplotlib is not thread-safe, therefore a new plot must be created on the main thread
+            self.optimize_thread.join()
+            self.update_oscillators_and_prediction(self.optimized_ensemble_sum)
 
         else:
             self.optimization_algorithm.enabled = True
@@ -203,10 +209,9 @@ class oscillators(toga.App):
 
     def optimize_ensemble_thread(self):
         optimized_ensemble_sum, ops = self.optimizer.search()
-        print(optimized_ensemble_sum)
-        print(ops)
+        print(f"Optimization finished after {ops} operations")
         self.optimize_toggle.value = False
-        self.update_prediction_parameters(optimized_ensemble_sum)
+        self.optimized_ensemble_sum = optimized_ensemble_sum
 
     def setup_target_controls(self):
         self.wave_type = toga.Selection(
@@ -248,14 +253,14 @@ class oscillators(toga.App):
 
         self.start_target_animation()
 
-    def update_oscillators_and_prediction(self, *args, **kwargs):
-        self.update_oscillator_parameters(None)
-        self.update_prediction_parameters(None)
+    def update_oscillators_and_prediction(self, optimized_ensemble=None, *args, **kwargs):
+        self.update_oscillator_parameters(optimized_ensemble)
+        self.update_prediction_parameters(optimized_ensemble)
 
-    def update_oscillator_parameters(self, widget):
+    def update_oscillator_parameters(self, optimized_ensemble=None, *args, **kwargs):
         self.oscillator_plot = None
-        self.setup_oscillator_plot()
-        self.start_oscillator_animation(None)
+        self.setup_oscillator_plot(optimized_ensemble)
+        self.start_oscillator_animation()
 
     def update_prediction_parameters(self, optimized_ensemble_sum=None, *args, **kwargs):
         self.prediction_plot = None
@@ -328,7 +333,7 @@ class oscillators(toga.App):
             fig = Figure()
             canvas = FigureCanvas(fig)
             ax = fig.add_subplot(111)
-            if optimized_ensemble is not None:
+            if optimized_ensemble is not None and isinstance(optimized_ensemble, sample.Sample):
                 meta_signal = meta_target.MetaTargetSmart(signal=optimized_ensemble.weighted_sum, duration=1, sampling_rate=SAMPLING_RATE)
             else:
                 meta_signal = meta_target.MetaTargetSmart(signal=sum_oscillators(self.oscillator_plot.oscillators, self.oscillator_plot.n_oscillators),
@@ -337,24 +342,33 @@ class oscillators(toga.App):
 
         self.prediction_plot = PredictionPlot()
 
-    def setup_oscillator_plot(self):
+    def setup_oscillator_plot(self, optimized_ensemble: sample.Sample = Union[sample.Sample | None]):
         @dataclass
         class OscillatorPlot:
             n_oscillators = int(self.n_oscillators_slider.value)
             n_rows, n_cols = data_analysis.infer_subplot_rows_cols(n_oscillators)
             fig, axs = plt.subplots(n_rows, n_cols)
             canvas = FigureCanvas(fig)
-            
+
             oscillators = []
-            for _ in range(n_oscillators):
-                wave = self.select_wave_type(self.oscillator_wave_type.value,
-                                             1, 1, 0, 0)
-                oscillators.append(wave)
-            oscillator_grid = oscillator_grid.OscillatorGrid(oscillators)
             lines = []
-            for i in range(n_oscillators):
-                ax = data_analysis.select_axis(axs, n_cols, i)
-                lines.append(ax.plot([], [], lw=2)[0])
+            if optimized_ensemble is not None and isinstance(optimized_ensemble, sample.Sample):
+                for i in range(n_oscillators):
+                    mt = meta_target.MetaTargetSmart(signal=optimized_ensemble.signal_matrix[i], duration=1, sampling_rate=SAMPLING_RATE)
+                    oscillators.append(mt)
+                oscillator_grid = oscillator_grid.OscillatorGrid(oscillators)
+                for i in range(n_oscillators):
+                    ax = data_analysis.select_axis(axs, n_cols, i)
+                    lines.append(ax.plot([], [], lw=2)[0])
+            else:            
+                for _ in range(n_oscillators):
+                    wave = self.select_wave_type(self.oscillator_wave_type.value,
+                                                1, 1, 0, 0)
+                    oscillators.append(wave)
+                oscillator_grid = oscillator_grid.OscillatorGrid(oscillators)
+                for i in range(n_oscillators):
+                    ax = data_analysis.select_axis(axs, n_cols, i)
+                    lines.append(ax.plot([], [], lw=2)[0])
 
         self.oscillator_plot = OscillatorPlot()
 
@@ -381,7 +395,7 @@ class oscillators(toga.App):
         self.main_window.content = animation_and_controls
         self.main_window.show()
 
-    def start_oscillator_animation(self, widget):
+    def start_oscillator_animation(self):
         if not self.generating_oscillators:
             self.generating_oscillators = True
             self.oscillator_animation_thread = threading.Thread(target=self.generate_oscillator_gif)
