@@ -34,7 +34,7 @@ import tempfile
 import threading
 from dataclasses import dataclass
 
-PORT = 8003
+PORT = 8001
 NUM_FRAMES = 40
 SAMPLING_RATE = 100
 
@@ -49,7 +49,7 @@ class oscillators(toga.App):
         self.setup_oscillators_webview()
         self.setup_prediction_webview()
         self.setup_controls_bar()
-        self.compose_window()
+        self.compose_windows()
 
         self.setup_target_plot()
         self.setup_oscillator_plot()
@@ -112,8 +112,9 @@ class oscillators(toga.App):
     def setup_controls_bar(self):
         self.setup_target_controls()
         self.setup_oscillator_controls()
-        spacer = toga.Box(style=Pack(height=30))
-        self.controls_bar = toga.Box(children=[self.target_controls, spacer, self.oscillator_controls],
+        spacer1 = toga.Box(style=Pack(height=30))
+        spacer2 = toga.Box(style=Pack(height=30))
+        self.controls_bar_side = toga.Box(children=[self.target_controls, spacer1, self.oscillator_controls, spacer2],
                                      style=Pack(direction=COLUMN))
         
     def setup_oscillator_controls(self):
@@ -396,7 +397,13 @@ class oscillators(toga.App):
     def setup_oscillators_webview(self):
         self.oscillators_web_view = toga.WebView(style=Pack(flex=1))
 
-    def compose_window(self):
+    def toggle_controls(self, widget):
+        if self.controls_bar_side.style.visibility == 'visible':
+            self.controls_bar_side.style.visibility = 'hidden'
+        else:
+            self.controls_bar_side.style.visibility = 'visible'
+
+    def compose_windows(self):
         spacer1 = toga.Box(style=Pack(height=30))
         spacer2 = toga.Box(style=Pack(height=30))
         animations = toga.Box(children=[self.target_web_view,
@@ -404,9 +411,12 @@ class oscillators(toga.App):
                                         self.oscillators_web_view,
                                         spacer2,
                                         self.prediction_web_view], style=Pack(direction=COLUMN, flex=2))
-        
-        animation_and_controls = toga.Box(children=[animations, self.controls_bar], style=Pack(direction=ROW))
-        self.main_window = toga.MainWindow(title=self.formal_name)
+        self.controls_bar_side.style.visibility = "visible"
+        # split box doesn't work on mobile currently, so skip this for now
+        # self.toggle_controls_button = toga.Button('Toggle Controls', on_press=self.toggle_controls)
+
+        animation_and_controls = toga.Box(children=[animations, self.controls_bar_side], style=Pack(direction=ROW))
+        self.main_window = toga.MainWindow(title=self.formal_name, size=(1200, 720), position=(300, 100))
         self.main_window.content = animation_and_controls
         self.main_window.show()
 
