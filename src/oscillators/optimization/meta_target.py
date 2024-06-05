@@ -69,22 +69,22 @@ class MetaTarget(ABC):
 class MetaTargetSample(MetaTarget):
     """load signal from file, save meta data; use sample based processing"""
 
-    def __init__(self, rand_args: party.PythonSignalRandArgs, name: str, path: Path) -> None:
+    def __init__(self, samples: int, name: str, path: Path) -> None:
         self.name = name
         # loading and manipulating the target signal
         raw_sampling_rate, raw_target, raw_dtype = data_io.load_data(path)
         # length checks
-        if rand_args.samples > len(raw_target):
+        if samples > len(raw_target):
             raise ValueError(
                 "The desired number of samples is less than contained in the original data"
             )
         # shorten the target
         target_middle = raw_target
-        if len(raw_target) // 3 > rand_args.samples:
+        if len(raw_target) // 3 > samples:
             target_middle = data_preprocessor.take_middle_third(raw_target)
         # downsample
         target_resampled: Final = data_preprocessor.downsample_typesafe(
-            target_middle, rand_args.samples
+            target_middle, samples
         )
         # save to wav
         data_io.save_signal_to_wav(

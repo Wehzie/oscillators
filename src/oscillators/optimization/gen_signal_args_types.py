@@ -22,6 +22,8 @@ class PythonSignalRandArgs:
 
     description: str  # description of the parameter configuration
 
+    # TODO
+    # base_function: meta_target.MetaTarget  # the unscaled form of a function/shape/wave to generate the signal
     duration: float  # signal duration in seconds
     samples: int  # number of samples in a signal
     sampling_rate: int  # number of samples per second

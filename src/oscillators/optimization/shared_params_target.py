@@ -226,18 +226,18 @@ def select_target_by_string(
 
     if selector == "magpie":
         if isinstance(generator_args, party.PythonSignalRandArgs):
-            m_target = meta_target.MetaTargetSample(generator_args, "magpie", DevSet.MAGPIE.value)
+            m_target = meta_target.MetaTargetSample(generator_args.samples, "magpie", DevSet.MAGPIE.value)
         elif isinstance(generator_args, party.SpiceSumRandArgs):
             m_target = meta_target.MetaTargetTime(generator_args, "magpie", DevSet.MAGPIE.value)
     elif selector == "human_yes":
         if isinstance(generator_args, party.PythonSignalRandArgs):
-            m_target = meta_target.MetaTargetSample(generator_args, "human_yes", DevSet.YES.value)
+            m_target = meta_target.MetaTargetSample(generator_args.samples, "human_yes", DevSet.YES.value)
         elif isinstance(generator_args, party.SpiceSumRandArgs):
-            m_target = meta_target.MetaTargetTime(generator_args, "human_yes", DevSet.YES.value)
+            m_target = meta_target.MetaTargetTime(generator_args.samples, "human_yes", DevSet.YES.value)
     elif selector == "bellbird":
         if isinstance(generator_args, party.PythonSignalRandArgs):
             m_target = meta_target.MetaTargetSample(
-                generator_args, "bellbird", TestSet.BELLBIRD.value
+                generator_args.samples, "bellbird", TestSet.BELLBIRD.value
             )
         elif isinstance(generator_args, party.SpiceSumRandArgs):
             m_target = meta_target.MetaTargetTime(
@@ -246,7 +246,7 @@ def select_target_by_string(
     elif selector == "human_okay":
         if isinstance(generator_args, party.PythonSignalRandArgs):
             m_target = meta_target.MetaTargetSample(
-                generator_args, "human_okay", TestSet.OKAY.value
+                generator_args.samples, "human_okay", TestSet.OKAY.value
             )
         elif isinstance(generator_args, party.SpiceSumRandArgs):
             m_target = meta_target.MetaTargetTime(generator_args, "human_okay", TestSet.OKAY.value)

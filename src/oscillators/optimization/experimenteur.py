@@ -287,14 +287,15 @@ class Experimenteur:
         print("sweeping with", sweep_bundle.num_samples_sweep.__class__.__name__)
         results = list()
         for s in sweep_bundle.num_samples_sweep.samples:
+            m_target = meta_target.MetaTargetSample(
+                s, "magpie", shared_params_target.DevSet.MAGPIE.value
+            )
             temp_args = copy.deepcopy(base_args)
             temp_args.samples = s  # inject samples into rand_args
-            m_target = meta_target.MetaTargetSample(
-                temp_args, "magpie", shared_params_target.DevSet.MAGPIE.value
-            )
+            # TODO: is deepcopy still necessary here?
             algo_sweep = sweep_builder.build_algo_sweep(
                 sweep_bundle.signal_generator,
-                temp_args,
+                temp_args, # 
                 m_target,
                 sweep_bundle.max_z_ops,
                 sweep_bundle.m_averages,
