@@ -222,7 +222,8 @@ class SpipySignalGenerator(gen_signal.SignalGenerator):
         # allocate more memory than necessary
         # exact number of samples is non-deterministic
         # the cost of np.zeros is higher than np.empty, but this seems safer
-        num_samples = rand_args.estimate_number_of_samples()
+        num_samples = data_preprocessor.estimate_spice_samples(rand_args.time_stop, rand_args.time_start,
+                                                               rand_args.time_step, rand_args.down_sample_factor)
         signal_matrix = np.zeros((rand_args.n_osc, num_samples))
 
         i = 0

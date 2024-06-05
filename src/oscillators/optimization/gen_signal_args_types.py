@@ -114,16 +114,6 @@ class SpiceSumRandArgs:
     generator_mode: SpipyGeneratorMode  # method of generating the signal
     down_sample_factor: Union[int, None] = None  # down sample the generated signal by this factor
 
-    def estimate_number_of_samples(self) -> int:
-        """estimate the number samples that SPICE will produce given the rand_args parameters"""
-        num_samples_float = (self.time_stop - self.time_start) / self.time_step
-        num_samples = np.around(num_samples_float).astype(int)
-
-        if self.down_sample_factor is None:
-            return num_samples
-
-        num_samples_after_downsampling = int(num_samples * self.down_sample_factor)
-        return num_samples_after_downsampling
 
     def get_sampling_rate(self) -> int:
         """get the sampling rate of the signal"""

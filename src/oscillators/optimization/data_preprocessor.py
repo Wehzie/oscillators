@@ -48,6 +48,32 @@ def downsample_by_factor_typesafe(data: np.ndarray, s_factor: float) -> np.ndarr
     step = int(1 / s_factor)
     return data[0:-1:step]
 
+# was estimate_number_of_samples
+def estimate_spice_samples( time_stop: float,
+                                time_start: float,
+                                time_step: float,
+                                down_sample_factor: float) -> int:
+    """estimate the number samples that SPICE will produce given the rand_args parameters
+    
+    args:
+        time_stop: the time at which the signal stops [s]
+        time_start: the time at which the signal starts [s]
+        time_step: the time step between samples [s]
+        down_sample_factor: the factor by which the signal is downsampled; where >= 0 factor  and <= 1
+
+    returns:
+        the number of samples that SPICE will produce
+    """
+    num_samples_float = (time_stop - time_start) / time_step
+    num_samples = np.around(num_samples_float).astype(int)
+
+    if down_sample_factor is None:
+        return num_samples
+
+    num_samples_after_downsampling = int(num_samples * down_sample_factor)
+    return num_samples_after_downsampling
+
+
 
 def get_sampling_rate_after_resample(
     old_signal: np.ndarray, new_signal: np.ndarray, old_sampling_rate: int

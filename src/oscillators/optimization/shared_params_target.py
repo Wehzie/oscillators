@@ -228,20 +228,25 @@ def select_target_by_string(
         if isinstance(generator_args, party.PythonSignalRandArgs):
             m_target = meta_target.MetaTargetSample(generator_args.samples, "magpie", DevSet.MAGPIE.value)
         elif isinstance(generator_args, party.SpiceSumRandArgs):
-            m_target = meta_target.MetaTargetTime(generator_args, "magpie", DevSet.MAGPIE.value)
+            m_target = meta_target.MetaTargetTime(generator_args.time_stop, generator_args.time_start,
+                                                  generator_args.time_step, generator_args.down_sample_factor,
+                                                  "magpie", DevSet.MAGPIE.value)
     elif selector == "human_yes":
         if isinstance(generator_args, party.PythonSignalRandArgs):
             m_target = meta_target.MetaTargetSample(generator_args.samples, "human_yes", DevSet.YES.value)
         elif isinstance(generator_args, party.SpiceSumRandArgs):
-            m_target = meta_target.MetaTargetTime(generator_args.samples, "human_yes", DevSet.YES.value)
+            m_target = meta_target.MetaTargetTime(generator_args.time_stop, generator_args.time_start,
+                                                  generator_args.time_step, generator_args.down_sample_factor,
+                                                  "human_yes", DevSet.YES.value)
     elif selector == "bellbird":
         if isinstance(generator_args, party.PythonSignalRandArgs):
             m_target = meta_target.MetaTargetSample(
                 generator_args.samples, "bellbird", TestSet.BELLBIRD.value
             )
         elif isinstance(generator_args, party.SpiceSumRandArgs):
-            m_target = meta_target.MetaTargetTime(
-                generator_args, "bellbird", TestSet.BELLBIRD.value
+            m_target = meta_target.MetaTargetTime(generator_args.time_stop, generator_args.time_start,
+                                                  generator_args.time_step, generator_args.down_sample_factor,
+                                                  "bellbird", TestSet.BELLBIRD.value
             )
     elif selector == "human_okay":
         if isinstance(generator_args, party.PythonSignalRandArgs):
@@ -249,7 +254,9 @@ def select_target_by_string(
                 generator_args.samples, "human_okay", TestSet.OKAY.value
             )
         elif isinstance(generator_args, party.SpiceSumRandArgs):
-            m_target = meta_target.MetaTargetTime(generator_args, "human_okay", TestSet.OKAY.value)
+            m_target = meta_target.MetaTargetTime(generator_args.time_stop, generator_args.time_start,
+                                                  generator_args.time_step, generator_args.down_sample_factor,
+                                                  "human_okay", TestSet.OKAY.value)
     elif selector == "sine":
         m_target = meta_target.SineTarget(duration, sampling_rate, samples, synth_freq, amplitude)
     elif selector == "triangle":
