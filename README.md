@@ -1,6 +1,6 @@
 # Signal Approximation by a Sum of Oscillators - with Graphics!
 
-![GUI demo video](demo.webm)
+![GUI demo video](demo.gif)
 
 This repo introduces a graphical frontend (GUI) to a [project](https://github.com/Wehzie/master-thesis) developed as a master thesis.
 The original projects addresses the question of function approximation by a sum of constant frequency oscillators.
