@@ -7,6 +7,7 @@ from enum import Enum
 import numpy as np
 
 from . import dist
+from . import meta_target
 
 #### #### #### #### PYTHON SIGNALS #### #### #### ####
 
@@ -22,8 +23,8 @@ class PythonSignalRandArgs:
 
     description: str  # description of the parameter configuration
 
-    # TODO
-    # base_function: meta_target.MetaTarget  # the unscaled form of a function/shape/wave to generate the signal
+    base_function: meta_target.SyntheticTarget  # the mathematical function to generate the signal
+
     duration: float  # signal duration in seconds
     samples: int  # number of samples in a signal
     sampling_rate: int  # number of samples per second
@@ -35,7 +36,7 @@ class PythonSignalRandArgs:
     weight_dist: dist.WeightDist  # the weight is applied to the amplitude; random variable to draw form
     phase_dist: dist.Dist  # random variable for the phase shift of an oscillator
     offset_dist: dist.Dist  # random variable for offset of an oscillator
-
+    
     def get_time(self) -> np.ndarray:
         """get a time array either from the provided duration or number of samples"""
         if self.duration:

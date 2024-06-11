@@ -15,13 +15,14 @@ from . import gen_signal_args_types as party
 from . import const
 from . import dist
 from . import gen_signal
+from . import meta_target
 
 
 class PythonSigGen(gen_signal.SignalGenerator):
     """Python signal generator class."""
 
     @staticmethod
-    def draw_params_random(args: party.PythonSignalRandArgs) -> party.PythonSignalDetArgs:
+    def draw_params_random(args: party.PythonSignalRandArgs) -> meta_target.SyntheticTarget:
         """draw parameters from the provided distributions"""
         duration = args.duration
         samples = args.samples
@@ -30,7 +31,9 @@ class PythonSigGen(gen_signal.SignalGenerator):
         phase = args.phase_dist.draw()
         sampling_rate = args.sampling_rate
 
-        return party.PythonSignalDetArgs(duration, samples, freq, amplitude, phase, sampling_rate)
+        return args.base_function(duration, sampling_rate, samples, freq, amplitude, phase,
+                                  0, # offset
+                                  )
 
     @staticmethod
     def gen_inv_sawtooth(
@@ -76,20 +79,19 @@ class PythonSigGen(gen_signal.SignalGenerator):
     @staticmethod
     def draw_single_oscillator(
         rand_args: party.PythonSignalRandArgs, store_det_args: bool = False
-    ) -> Tuple[np.ndarray, np.ndarray, Union[None, party.PythonSignalDetArgs]]:
+    ) -> Tuple[np.ndarray, np.ndarray, Union[None, meta_target.SyntheticTarget]]:
         """generate a time-series for a single oscillator, with a random frequency and phase"""
         # determine a set of parameters for a single oscillator
-        det_args = PythonSigGen.draw_params_random(rand_args)
-        # generate single oscillator signal, discard x-range
-        single_signal, time = PythonSigGen.gen_inv_sawtooth(**det_args.__dict__)
+        det_signal = PythonSigGen.draw_params_random(rand_args)
+
         if store_det_args:
-            return single_signal, time, det_args
-        return single_signal, time, None
+            return det_signal.signal, det_signal.time, det_signal
+        return det_signal.signal, det_signal.time, None
 
     @staticmethod
     def draw_n_oscillators(
         rand_args: party.PythonSignalRandArgs, store_det_args: bool = False
-    ) -> Tuple[np.ndarray, List[Union[None, party.PythonSignalDetArgs]]]:
+    ) -> Tuple[np.ndarray, List[Union[None, meta_target.SyntheticTarget]]]:
         """draw a matrix of n oscillator signals, each with a random frequency and phase"""
         signal_matrix = np.empty((rand_args.n_osc, rand_args.samples))
         det_arg_li = list()
@@ -193,16 +195,16 @@ def skewed_triangle_wave(
 def main():
     sig_generator = PythonSigGen()
 
-    time = np.linspace(0, 1, 80000)
-    fig = plt.figure()
-    plt.plot(time, skewed_triangle_wave(duration=1, sampling_rate=10000, L=0.5, m=8, a=1, p=0, b=0))
-    # x label
-    fig.set_size_inches(10, 3)
-    plt.subplots_adjust(bottom=0.15)
-    plt.xlabel("Time [s]")
-    plt.savefig("skewed_triangle.png", dpi=300)
-    plt.show()
-    exit()
+    if False:
+        time = np.linspace(0, 1, 80000)
+        fig = plt.figure()
+        plt.plot(time, skewed_triangle_wave(duration=1, sampling_rate=10000, L=0.5, m=8, a=1, p=0, b=0))
+        # x label
+        fig.set_size_inches(10, 3)
+        plt.subplots_adjust(bottom=0.15)
+        plt.xlabel("Time [s]")
+        plt.savefig("skewed_triangle.png", dpi=300)
+        plt.show()
 
     if False:
         x, y = gen_custom_inv_sawtooth(
@@ -226,11 +228,12 @@ def main():
         data_analysis.plot_signal(signal, time, show=True)
 
     # generate a sum of signals from random variables
-    n_oscillators = 4
-    f_max = 5
+    n_oscillators = 6
+    f_max = 2
     sampling_rate = 2 * const.OVERSAMPLING_FACTOR * f_max
     rand_args = party.PythonSignalRandArgs(
         description="test Python signal generator",
+        base_function=meta_target.SineTarget,
         n_osc=n_oscillators,
         duration=10,
         samples=None,
@@ -248,10 +251,10 @@ def main():
     if rand_args.samples == None:
         rand_args.samples = int(rand_args.duration * rand_args.sampling_rate)
 
-    if False:
+    if True:
         print("single oscillator from rand_args")
         single_signal, time, _ = sig_generator.draw_single_oscillator(rand_args)
-        print(data_analysis.get_freq_from_fft_v2(signal, 1 / sampling_rate))
+        print(data_analysis.get_freq_from_fft_v2(single_signal, 1 / sampling_rate))
         data_analysis.plot_signal(single_signal, time)
         plt.show()
 

@@ -10,7 +10,7 @@ from . import data_preprocessor
 from . import const
 from . import data_analysis
 
-from typing import Final, Union, List
+from typing import Final, Type, Union, List
 from pathlib import Path
 from abc import ABC
 
@@ -300,6 +300,24 @@ class SyntheticTarget(MetaTarget):
         """compute the l-point average over the signal using a convolution"""
         unpadded = np.convolve(arr, np.ones(window_length), "valid") / window_length
         return data_preprocessor.pad_zero(unpadded, len(arr))
+    
+    @staticmethod
+    def map_name_to_class(name: str) -> 'Type[SyntheticTarget]':
+        """map a name to a synthetic target class"""
+        return {
+            "sine": SineTarget,
+            "triangle": TriangleTarget,
+            "square": SquareTarget,
+            "sawtooth": SawtoothTarget,
+            "inverse sawtooth": InverseSawtoothTarget,
+            "chirp": ChirpTarget,
+            "beat": BeatTarget,
+            "damp chirp": DampChirpTarget,
+            "smooth gaussian noise": SmoothGaussianNoiseTarget,
+            "smooth uniform noise": SmoothUniformNoiseTarget,
+            "gaussian noise": GaussianNoiseTarget,
+            "uniform noise": UniformNoiseTarget,
+        }[name]
 
 
 class SineTarget(SyntheticTarget):

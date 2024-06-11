@@ -177,6 +177,7 @@ class oscillators(toga.App):
             n_osc = int(self.n_oscillators_slider.value)
             self.generator_distribution = generator_distribution.PythonSignalRandArgs(
                 description="test base-parameters for drawing oscillators from a uniform distribution",
+                base_function=meta_target.SyntheticTarget.map_name_to_class(self.oscillator_wave_type.value.lower()),
                 n_osc=n_osc,
                 duration=1,
                 samples=SAMPLING_RATE,
